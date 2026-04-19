@@ -21,7 +21,7 @@ class UserController extends Controller
             'password' => [
                 'required',
                 'string',
-                Password::min(8) // Removed the quotes that caused the crash
+                Password::min(8) 
                     ->letters()
                     ->mixedCase()
                     ->numbers()
@@ -32,25 +32,19 @@ class UserController extends Controller
         if(auth()->attempt($credentials)){
             $request->session()->regenerate();
 
-            // Redirect based on the user's role
-            $user = auth()->user(); // Get the authenticated user
+            $user = auth()->user(); 
 
             if ($user->role === 'Employee') {
                 return redirect()->route('customer.product');
-
             } elseif ($user->role === 'Admin') {
                 return redirect()->route('admin.dashboard');
-                
             } elseif (strtolower($user->role) === 'delivery') {
-                // Delivery Role Redirection
                 return redirect()->intended('/delivery/dashboard');
             }
             
-            // Fallback just in case
             return redirect()->intended('/');
             
         }else{
-            // Redirect back to login with error message
             return redirect()->back()->with('error', 'Incorrect Username or Password!');
         }
     }
@@ -62,7 +56,7 @@ class UserController extends Controller
         $topSellingProducts = OrderDetail::with('product')
         ->selectRaw('product_id, SUM(quantity) as total_sales')
         ->groupBy('product_id')
-        ->orderByDesc('total_sales') // Order by highest quantity
+        ->orderByDesc('total_sales') 
         ->get();
 
         $inventoryLevels = Product::select('product_name', 'stocks')->get();
@@ -94,13 +88,10 @@ class UserController extends Controller
         'profile' => 'required|file|mimes:jpg,jpeg,png|max:5120'
     ]);
 
-    // Hash Password
     $fields['password'] = Hash::make($fields['password']);
 
     if($request->hasFile('profile')){
             $fields['profile'] = Storage::disk('public')->put('profiles',$request->profile);
-
-            // Store data to Users Table
             $user = User::create($fields);
 
             if($user){
@@ -112,25 +103,21 @@ class UserController extends Controller
     }
 
     public function displayEmployee(){
-        // Fetch all records who has role of employee
         $employees = User::where('role','Employee')->get();
         return inertia('Admin/Employee',['employees' => $employees]);
     }
 
     public function viewEmployeeProfile($user_id) {
         $employee_profile = User::find($user_id);
-
         return inertia('Admin/Employee_Features/ViewProfile', [
             'user_info' => $employee_profile
         ]);
     }
 
     public function updateUserInfo(Request $request){
-        // Check if their's a same record of updated contact number
         $existingContacts = User::where('contact_number',$request->contact_number)->first();
 
-        // Check if the existing record id is the same with parameter id
-        if($existingContacts->id == $request->id){
+        if($existingContacts && $existingContacts->id == $request->id){
             $field = $request->validate([
                 'firstname' => 'required',
                 'lastname' => 'required',
@@ -161,7 +148,6 @@ class UserController extends Controller
                 return redirect()->back()-with('error','User info failed to update.');
             }
         }
-        
     }
 
     public function updatePassword(Request $request){
@@ -188,10 +174,7 @@ class UserController extends Controller
 
         if($fields['new_password'] === $fields['confirm_password']){
             $fields['new_password'] = Hash::make($fields['new_password']);
-
-            $user = User::where('id',$request->id)->update([
-                'password' =>  $fields['new_password'],
-            ]);
+            $user = User::where('id',$request->id)->update(['password' =>  $fields['new_password']]);
 
             if($user){
                 return redirect()->route('employee.viewProfile',['user_id' => $request->id])
@@ -203,22 +186,18 @@ class UserController extends Controller
     }
 
     public function adminProfile(){
-        $user = auth()->user(); // get the authenticated user
-
+        $user = auth()->user(); 
         $admin = User::find($user);
 
         if($admin){
             return inertia('Admin/Profile',['admin' => $admin]);
         }
-        
     }
 
     public function updateAdminInfo(Request $request){
         if($request->contact_number !== null){
             $existingContacts = User::where('contact_number',$request->contact_number)->first();
-
             if($existingContacts !== null){
-                // Check if the existing record id is the same with parameter id
                 if($existingContacts->id == $request->id){
                     $field = $request->validate([
                         'firstname' => 'required',
@@ -242,7 +221,6 @@ class UserController extends Controller
                     'username' => 'required',
                 ]);
             }
-
         }else{
             $field = $request->validate([
                 'firstname' => 'required',
@@ -293,10 +271,7 @@ class UserController extends Controller
 
         if($fields['new_password'] === $fields['confirm_password']){
             $fields['new_password'] = Hash::make($fields['new_password']);
-
-            $user = User::where('id',$request->id)->update([
-                'password' =>  $fields['new_password'],
-            ]);
+            $user = User::where('id',$request->id)->update(['password' =>  $fields['new_password']]);
 
             if($user){
                 return redirect()->route('admin.profile',['user_id' => $request->id])
@@ -307,16 +282,12 @@ class UserController extends Controller
         }
     }
 
+    // --- SALES FIX: FETCHING PARENT ORDER FOR DELIVERY PHOTO ---
     public function sales($order_id = null){
-
         $employees = User::where('role','Employee')->get();
 
         if($order_id == null){
-            $order_id = OrderDetail::select('order_id')
-            ->distinct()
-            ->latest()
-            ->get();
-
+            $order_id = OrderDetail::select('order_id')->distinct()->latest()->get();
             $orders = Order::latest()->paginate(12);
 
             return inertia('Admin/Sales',[
@@ -324,19 +295,18 @@ class UserController extends Controller
                 'order_id' => $order_id,
                 'orders' => $orders,
                 'currentSelected_ID' => 'All',
+                'parent_order' => null
             ]);
-
         }else{
-            $order_details = OrderDetail::with('product')
-            ->where('order_id',$order_id)
-            ->latest()
-            ->paginate(5);
+            $order_details = OrderDetail::with('product')->where('order_id',$order_id)->latest()->paginate(5);
+            $parent_order = Order::find($order_id); 
             
             return inertia('Admin/Sales',[
                 'employees' => $employees,
                 'order_id' => null,
                 'orders' => $order_details,
                 'currentSelected_ID' => 'All',
+                'parent_order' => $parent_order 
             ]);
         } 
     }
@@ -344,31 +314,19 @@ class UserController extends Controller
     public function selectedEmployee($user_id){
         if($user_id != 'All'){
             $employees = User::where('role','Employee')->get();
-
-            $order_id = OrderDetail::select('order_id')
-            ->where('user_id',$user_id)
-            ->distinct()
-            ->latest()
-            ->get();
-
-            $orders = Order::where('user_id',$user_id)
-            ->latest()
-            ->paginate(12);
+            $order_id = OrderDetail::select('order_id')->where('user_id',$user_id)->distinct()->latest()->get();
+            $orders = Order::where('user_id',$user_id)->latest()->paginate(12);
 
             return inertia('Admin/Sales',[
                 'employees' => $employees,
                 'order_id' => $order_id,
                 'orders' => $orders,
                 'currentSelected_ID' => $user_id,
+                'parent_order' => null
             ]);
         }else{
             $employees = User::where('role','Employee')->get();
-
-            $order_id = OrderDetail::select('order_id')
-            ->distinct()
-            ->latest()
-            ->get();
-
+            $order_id = OrderDetail::select('order_id')->distinct()->latest()->get();
             $orders = Order::latest()->paginate(12);
 
             return inertia('Admin/Sales',[
@@ -376,6 +334,7 @@ class UserController extends Controller
                 'order_id' => $order_id,
                 'orders' => $orders,
                 'currentSelected_ID' => 'All',
+                'parent_order' => null
             ]);
         }
     }
@@ -386,46 +345,34 @@ class UserController extends Controller
         $request->merge(['order_id' => (int) $cleanId]);
     
         $employees = User::where('role','Employee')->get();
+        $order_id = OrderDetail::select('order_id')->where('order_id',$request->order_id)->distinct()->first();
 
-            $order_id = OrderDetail::select('order_id')
-            ->where('order_id',$request->order_id)
-            ->distinct()
-            ->first();
-
-            if($order_id == null){
-                $employees = User::where('role','Employee')->get();
-
-                $order_id = OrderDetail::select('order_id')
-                ->distinct()
-                ->latest()
-                ->get();
-
-                $orders = Order::latest()->paginate(12);
-
-                return inertia('Admin/Sales',[
-                    'employees' => $employees,
-                    'order_id' => $order_id,
-                    'orders' => $orders,
-                    'currentSelected_ID' => 'All',
-                ]);
-            }
-
-            $orders = Order::where('id',$request->order_id)
-            ->latest()
-            ->paginate(12);
+        if($order_id == null){
+            $order_id = OrderDetail::select('order_id')->distinct()->latest()->get();
+            $orders = Order::latest()->paginate(12);
 
             return inertia('Admin/Sales',[
                 'employees' => $employees,
                 'order_id' => $order_id,
                 'orders' => $orders,
                 'currentSelected_ID' => 'All',
+                'parent_order' => null
             ]);
+        }
+
+        $orders = Order::where('id',$request->order_id)->latest()->paginate(12);
+
+        return inertia('Admin/Sales',[
+            'employees' => $employees,
+            'order_id' => $order_id,
+            'orders' => $orders,
+            'currentSelected_ID' => 'All',
+            'parent_order' => null
+        ]);
     }
 
     public function employeeLogout(Request $request){
         Auth::logout();
-
-        // Invalidate and regenerate session
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

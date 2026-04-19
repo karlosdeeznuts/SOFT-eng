@@ -6,12 +6,8 @@ import { IoSearchSharp } from "react-icons/io5";
 import { useRoute } from '../../../../vendor/tightenco/ziggy';
 import { IoReceipt } from "react-icons/io5";
 
-function Sales({ employees, order_id, orders, currentSelected_ID }) {
-    console.log(employees);
-    console.log(order_id);
-    console.log(orders);
-    console.log('The current employee filter : ' + currentSelected_ID);
-
+// Added parent_order prop to receive the image
+function Sales({ employees, order_id, orders, currentSelected_ID, parent_order }) {
     const route = useRoute();
 
     const { data, setData, post, processing, reset } = useForm({
@@ -27,14 +23,11 @@ function Sales({ employees, order_id, orders, currentSelected_ID }) {
         })
     }
 
-
     const handleEmployeeChange = (e) => {
         e.preventDefault();
-
         const selectedId = e.target.value;
         router.get(route('admin.selectedEmployee', { user_id: selectedId }));
     };
-
 
     return (
         <div className='py-3'>
@@ -47,11 +40,7 @@ function Sales({ employees, order_id, orders, currentSelected_ID }) {
                         value={data.order_id}
                         onChange={(e) => setData('order_id', e.target.value)}
                     />
-                    <button
-                        type='submit'
-                        className='btn btn-success'
-                        disabled={processing}
-                    >
+                    <button type='submit' className='btn btn-success' disabled={processing}>
                         <IoSearchSharp />
                     </button>
                 </form>
@@ -65,13 +54,8 @@ function Sales({ employees, order_id, orders, currentSelected_ID }) {
                         onChange={handleEmployeeChange}
                     >
                         <option value="All" selected={currentSelected_ID === 'All'}>All</option>
-
                         {employees.map(employee => (
-                            <option
-                                value={employee.id}
-                                key={employee.id}
-                                selected={currentSelected_ID == employee.id}
-                            >
+                            <option value={employee.id} key={employee.id} selected={currentSelected_ID == employee.id}>
                                 {employee.firstname} {employee.lastname}
                             </option>
                         ))}
@@ -79,35 +63,21 @@ function Sales({ employees, order_id, orders, currentSelected_ID }) {
                 </div>
             </div>
 
-
             <div className="card shadow-sm rounded-lg">
                 {
-                    order_id ?
-                        ''
-                        :
+                    order_id ? '' :
                         <div className="card-header d-flex justify-content-between align-items-center bg-success">
-                            <Link
-                                href={route('admin.sales')}
-                                className='d-flex align-items-center gap-2 text-light'
-                                style={{ textDecoration: 'none' }}
-                            >
-                                <FaArrowLeftLong />
-                                Back
+                            <Link href={route('admin.sales')} className='d-flex align-items-center gap-2 text-light' style={{ textDecoration: 'none' }}>
+                                <FaArrowLeftLong /> Back
                             </Link>
-
-                            <Link
-                                href={route('admin.invoice', { order_id: orders.data[0].order_id })}
-                                className='btn btn-light btn-sm shadow-sm d-flex align-items-center gap-2'
-                                style={{ textDecoration: 'none' }}
-                            >
-                                <IoReceipt />
-                                View Invoice
+                            <Link href={route('admin.invoice', { order_id: orders.data[0].order_id })} className='btn btn-light btn-sm shadow-sm d-flex align-items-center gap-2' style={{ textDecoration: 'none' }}>
+                                <IoReceipt /> View Invoice
                             </Link>
                         </div>
                 }
 
                 <div className="card-body">
-                    <table class="table">
+                    <table className="table">
                         <thead className='text-center'>
                             {
                                 order_id ?
@@ -130,7 +100,6 @@ function Sales({ employees, order_id, orders, currentSelected_ID }) {
                                         <th>Date Ordered</th>
                                     </tr>
                             }
-
                         </thead>
                         <tbody className='text-center'>
                             {
@@ -139,25 +108,23 @@ function Sales({ employees, order_id, orders, currentSelected_ID }) {
                                         orders.data.map((order, index) => (
                                             <tr className='align-middle' key={index}>
                                                 <td className='text-start'>
-                                                    #TUNGAL{Array.isArray(order_id)
-                                                        ? order_id[index]?.order_id
-                                                        : order_id?.order_id
-                                                    }
+                                                    #TUNGAL{Array.isArray(order_id) ? order_id[index]?.order_id : order_id?.order_id}
                                                 </td>
                                                 <td>{order.user_id}</td>
                                                 <td>{order.quantity}</td>
                                                 <td>₱{order.total}</td>
                                                 <td>₱{order.cash_recieved}</td>
                                                 <td>₱{order.change}</td>
-                                                <td className='text-success'>{order.order_status}</td>
+                                                <td className={`fw-bold ${
+                                                    order.order_status === 'Delivered' ? 'text-success' :
+                                                    order.order_status === 'Received' ? 'text-primary' :
+                                                    'text-warning'
+                                                }`}>
+                                                    {order.order_status}
+                                                </td>
                                                 <td>
                                                     <Link
-                                                        href={route('admin.sales', {
-                                                            order_id:
-                                                                Array.isArray(order_id)
-                                                                    ? order_id[index]?.order_id
-                                                                    : order_id?.order_id
-                                                        })}
+                                                        href={route('admin.sales', { order_id: Array.isArray(order_id) ? order_id[index]?.order_id : order_id?.order_id })}
                                                         className='btn btn-success btn-sm d-flex justify-content-center align-items-center gap-2'
                                                     >
                                                         <FaEye /> View
@@ -169,12 +136,7 @@ function Sales({ employees, order_id, orders, currentSelected_ID }) {
                                         orders.data.map(order => (
                                             <tr className='align-middle' key={order.id}>
                                                 <td className='d-flex align-items-center gap-3'>
-                                                    <img
-                                                        src={`/storage/${order.product.image}`}
-                                                        alt="product"
-                                                        className="object-fit-cover"
-                                                        style={{ width: '50px', height: '50px' }}
-                                                    />
+                                                    <img src={`/storage/${order.product.image}`} alt="product" className="object-fit-cover" style={{ width: '50px', height: '50px' }} />
                                                     <p>{order.product.product_name}</p>
                                                 </td>
                                                 <td>₱{order.product.price}</td>
@@ -182,12 +144,8 @@ function Sales({ employees, order_id, orders, currentSelected_ID }) {
                                                 <td>₱{order.total}</td>
                                                 <td>
                                                     {new Date(order.updated_at).toLocaleString('en-US', {
-                                                        month: 'long',
-                                                        day: '2-digit',
-                                                        year: 'numeric',
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                        hour12: true,
+                                                        month: 'long', day: '2-digit', year: 'numeric',
+                                                        hour: '2-digit', minute: '2-digit', hour12: true,
                                                     })}
                                                 </td>
                                             </tr>
@@ -202,36 +160,40 @@ function Sales({ employees, order_id, orders, currentSelected_ID }) {
                                 )
                             }
                         </tbody>
-
                     </table>
+
+                    {/* NEW: Displays the proof of delivery image if it exists */}
+                    {!order_id && parent_order && parent_order.delivery_proof && (
+                        <div className="mt-5 pt-3 border-top">
+                            <h5 className="text-secondary fw-bold mb-3">Proof of Delivery</h5>
+                            <div className="bg-light p-3 rounded text-center border">
+                                <img 
+                                    src={`/storage/${parent_order.delivery_proof}`} 
+                                    alt="Delivery Proof" 
+                                    className="img-fluid rounded shadow-sm" 
+                                    style={{ maxHeight: '400px', objectFit: 'contain' }} 
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="card-footer d-flex justify-content-between align-items-center p-3">
                     <p>{orders.to} out of {orders.total} Products</p>
-
                     <div>
-                        {
-                            orders.links.map((link) => (
-                                link.url ?
-                                    <Link
-                                        key={link.label}
-                                        href={link.url}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                        className={`btn btn-sm me-3 ${link.active ? 'btn-success' : 'btn-outline-success'}`}
-                                        style={{ textDecoration: 'none' }}
-                                        preserveScroll
-                                    />
-
-                                    :
-                                    <span
-                                        key={link.label}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                        className='me-3 text-muted'
-                                    >
-
-                                    </span>
-                            ))
-                        }
+                        {orders.links.map((link) => (
+                            link.url ?
+                                <Link
+                                    key={link.label}
+                                    href={link.url}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                    className={`btn btn-sm me-3 ${link.active ? 'btn-success' : 'btn-outline-success'}`}
+                                    style={{ textDecoration: 'none' }}
+                                    preserveScroll
+                                />
+                                :
+                                <span key={link.label} dangerouslySetInnerHTML={{ __html: link.label }} className='me-3 text-muted'></span>
+                        ))}
                     </div>
                 </div>
             </div>
