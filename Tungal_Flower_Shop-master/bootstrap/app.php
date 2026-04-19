@@ -13,8 +13,14 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
-        HandleInertiaRequests::class,
-    ]);
+            HandleInertiaRequests::class,
+        ]);
+        
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'employee' => \App\Http\Middleware\EmployeeMiddleware::class,
+            'delivery' => \App\Http\Middleware\DeliveryMiddleware::class, 
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

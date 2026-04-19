@@ -24,8 +24,29 @@ use Illuminate\Support\Facades\Route;
     Route::post('/authentication', [UserController::class,'authentication'])
     ->name('customer.authentication');
 
+    // --- DELIVERY PERSONNEL ROUTES ---
+Route::middleware(['auth', 'delivery'])->prefix('delivery')->group(function () {
+    
+    // 1. The List (Dashboard)
+    Route::get('/dashboard', [App\Http\Controllers\OrderController::class, 'deliveryDashboard'])->name('delivery.dashboard');
+    
+    // 2. The Details Page (with the placeholder address)
+    Route::get('/orders/{id}', [App\Http\Controllers\OrderController::class, 'deliveryDetails'])->name('delivery.details');
+
+    // 3. The Upload Pages
+    Route::get('/orders/{id}/confirm', [App\Http\Controllers\OrderController::class, 'showDeliveryForm'])->name('delivery.confirm.show');
+    Route::post('/orders/{id}/confirm', [App\Http\Controllers\OrderController::class, 'storeDeliveryProof'])->name('delivery.confirm.store');
+    
+});
+
 
 Route::middleware(['auth', EmployeeMiddleware::class])->group(function () {
+
+    Route::get('/employee/deliveries', [App\Http\Controllers\OrderController::class, 'deliveriesList'])->name('employee.deliveries');
+
+    Route::get('/orders/{id}/confirm-delivery', [App\Http\Controllers\OrderController::class, 'showDeliveryForm'])->name('orders.delivery_confirm.show');
+    Route::post('/orders/{id}/confirm-delivery', [App\Http\Controllers\OrderController::class, 'storeDeliveryProof'])->name('orders.delivery_confirm.store');
+
     
     // Product-Feature Routes
     Route::get('/product', [ProductController::class,'displayProduct'])

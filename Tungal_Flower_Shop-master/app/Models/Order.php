@@ -13,6 +13,8 @@ class Order extends Model
         'total',
         'cash_recieved',
         'change',
+        'order_status',
+        'delivery_proof',
     ];
 
     public function details() {

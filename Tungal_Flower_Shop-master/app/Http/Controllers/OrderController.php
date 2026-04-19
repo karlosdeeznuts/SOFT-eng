@@ -21,6 +21,48 @@ class OrderController extends Controller
             'orders' => $orders,
         ]);
     }
+
+    public function deliveriesList() 
+    {
+        $orders = \App\Models\Order::latest()->get();
+        
+        return inertia('Employee/Deliveries', [
+            'orders' => $orders
+        ]);
+    }
     
-    
+    public function showDeliveryForm($id) {
+        $order = \App\Models\Order::findOrFail($id); 
+
+        return inertia('Delivery/Confirm', [
+            'order' => $order
+        ]);
+    }
+
+    public function storeDeliveryProof(Request $request, $id) {
+        $request->validate(['proof_image' => 'required|image|max:5000']);
+        
+        $order = \App\Models\Order::findOrFail($id);
+        
+        if ($request->hasFile('proof_image')) {
+            $path = $request->file('proof_image')->store('proofs', 'public');
+            $order->update(['delivery_proof' => $path, 'order_status' => 'Delivered']);
+        }
+        
+        return redirect()->route('delivery.dashboard');
+    }
+
+    // Loads the list of all orders
+    public function deliveryDashboard() 
+    {
+        $orders = \App\Models\Order::latest()->get();
+        return inertia('Delivery/Dashboard', ['orders' => $orders]);
+    }
+
+    // Loads the specific details for one order
+    public function deliveryDetails($id)
+    {
+        $order = \App\Models\Order::findOrFail($id);
+        return inertia('Delivery/Details', ['order' => $order]);
+    }
 }
