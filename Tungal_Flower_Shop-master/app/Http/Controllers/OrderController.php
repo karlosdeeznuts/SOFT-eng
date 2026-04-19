@@ -22,7 +22,6 @@ class OrderController extends Controller
         ]);
     }
 
-    // Add this inside OrderController
     public function deliveriesList() 
     {
         $orders = \App\Models\Order::latest()->get();
@@ -33,12 +32,24 @@ class OrderController extends Controller
     }
     
     public function showDeliveryForm($id) {
-        // We removed the 'first()' hack. Now it searches for the exact order ID clicked.
         $order = \App\Models\Order::findOrFail($id); 
 
-        return inertia('Customer/Order_Features/DeliveryProof', [
+        return inertia('Delivery/Confirm', [
             'order' => $order
         ]);
+    }
+
+    public function storeDeliveryProof(Request $request, $id) {
+        $request->validate(['proof_image' => 'required|image|max:5000']);
+        
+        $order = \App\Models\Order::findOrFail($id);
+        
+        if ($request->hasFile('proof_image')) {
+            $path = $request->file('proof_image')->store('proofs', 'public');
+            $order->update(['delivery_proof' => $path, 'order_status' => 'Delivered']);
+        }
+        
+        return redirect()->route('delivery.dashboard');
     }
 
     // Loads the list of all orders
@@ -54,5 +65,4 @@ class OrderController extends Controller
         $order = \App\Models\Order::findOrFail($id);
         return inertia('Delivery/Details', ['order' => $order]);
     }
-    
 }

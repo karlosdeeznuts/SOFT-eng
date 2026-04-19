@@ -8,7 +8,7 @@ export default function DeliveryProof({ order }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route('orders.delivery_confirm.store', order.id));
+        post(route('delivery.confirm.store', order.id));
     };
 
     return (

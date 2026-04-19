@@ -16,13 +16,12 @@ class UserController extends Controller
 {
     public function authentication(Request $request) 
     {
-        // dd($request);
         $credentials = $request->validate([
             'username' => 'required',
             'password' => [
                 'required',
                 'string',
-                Password::min(8)
+                Password::min(8) // Removed the quotes that caused the crash
                     ->letters()
                     ->mixedCase()
                     ->numbers()
@@ -41,7 +40,15 @@ class UserController extends Controller
 
             } elseif ($user->role === 'Admin') {
                 return redirect()->route('admin.dashboard');
+                
+            } elseif (strtolower($user->role) === 'delivery') {
+                // Delivery Role Redirection
+                return redirect()->intended('/delivery/dashboard');
             }
+            
+            // Fallback just in case
+            return redirect()->intended('/');
+            
         }else{
             // Redirect back to login with error message
             return redirect()->back()->with('error', 'Incorrect Username or Password!');
@@ -58,10 +65,7 @@ class UserController extends Controller
         ->orderByDesc('total_sales') // Order by highest quantity
         ->get();
 
-        // dd($topSellingProducts);
-
         $inventoryLevels = Product::select('product_name', 'stocks')->get();
-        // dd($inventoryLevels);
 
         return inertia('Admin/Dashboard',[
             'sales_revenue' => $sales_revenue,
@@ -72,8 +76,6 @@ class UserController extends Controller
     }
     
     public function storeEmployeeData(Request $request){
-        // dd($request);
-
         $fields = $request->validate([
         'firstname' => 'required|max:50',
         'lastname' => 'required|max:50',
@@ -124,7 +126,6 @@ class UserController extends Controller
     }
 
     public function updateUserInfo(Request $request){
-        // dd($request);
         // Check if their's a same record of updated contact number
         $existingContacts = User::where('contact_number',$request->contact_number)->first();
 
@@ -164,7 +165,6 @@ class UserController extends Controller
     }
 
     public function updatePassword(Request $request){
-        // dd($request);
         $fields = $request->validate([
             'new_password' => [
             'required',
@@ -214,10 +214,8 @@ class UserController extends Controller
     }
 
     public function updateAdminInfo(Request $request){
-        // dd($request->id);
         if($request->contact_number !== null){
             $existingContacts = User::where('contact_number',$request->contact_number)->first();
-            // dd($existingContacts);
 
             if($existingContacts !== null){
                 // Check if the existing record id is the same with parameter id
@@ -272,7 +270,6 @@ class UserController extends Controller
     }
 
     public function updateAdminPassword(Request $request){
-        // dd($request);
         $fields = $request->validate([
             'new_password' => [
             'required',
@@ -330,7 +327,6 @@ class UserController extends Controller
             ]);
 
         }else{
-            // dd('Fetch Order Details');
             $order_details = OrderDetail::with('product')
             ->where('order_id',$order_id)
             ->latest()
@@ -346,8 +342,6 @@ class UserController extends Controller
     }
 
     public function selectedEmployee($user_id){
-        // dd($user_id);
-
         if($user_id != 'All'){
             $employees = User::where('role','Employee')->get();
 
@@ -387,24 +381,9 @@ class UserController extends Controller
     }
 
     public function searchedOrderID(Request $request){
-         // 1️⃣  Pull the raw value coming from the browser, e.g. “#TUNGAL14”
-    $rawId = $request->input('order_id');
-
-    /*
-     * 2️⃣  Strip everything that isn’t a digit.
-     *     - “#TUNGAL14” ➜ “14”
-     *     - “ABC-123”  ➜ “123”
-     *
-     *     If the prefix is *always* “#TUNGAL”, you could replace it
-     *     directly with `str_replace('#TUNGAL', '', $rawId)`, but the
-     *     regex below is safer if the prefix might vary.
-     */
-    $cleanId = preg_replace('/\D+/', '', $rawId);   // keep digits only
-
-    // 3️⃣  Overwrite the request so you can keep using $request->order_id
-    $request->merge(['order_id' => (int) $cleanId]);
-
-    // dd($request->order_id);
+        $rawId = $request->input('order_id');
+        $cleanId = preg_replace('/\D+/', '', $rawId);
+        $request->merge(['order_id' => (int) $cleanId]);
     
         $employees = User::where('role','Employee')->get();
 
@@ -413,8 +392,6 @@ class UserController extends Controller
             ->distinct()
             ->first();
 
-            // dd($order_id);
-            // Check if the order id search are existing or not
             if($order_id == null){
                 $employees = User::where('role','Employee')->get();
 
@@ -466,13 +443,10 @@ class UserController extends Controller
     }
 
     public function updateProfileInfo(Request $request){
-        // dd($request->id);
         if($request->contact_number !== null){
             $existingContacts = User::where('contact_number',$request->contact_number)->first();
-            // dd($existingContacts);
 
             if($existingContacts !== null){
-                // Check if the existing record id is the same with parameter id
                 if($existingContacts->id == $request->id){
                     $field = $request->validate([
                         'firstname' => 'required',
@@ -524,7 +498,6 @@ class UserController extends Controller
     }
 
     public function updateProfilePassword(Request $request){
-        // dd($request);
         $fields = $request->validate([
             'new_password' => [
             'required',
@@ -561,7 +534,4 @@ class UserController extends Controller
             }
         }
     }
-
-
-    
 }
