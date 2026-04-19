@@ -16,6 +16,13 @@ return Application::configure(basePath: dirname(__DIR__))
         HandleInertiaRequests::class,
     ]);
     })
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'employee' => \App\Http\Middleware\EmployeeMiddleware::class,
+            'delivery' => \App\Http\Middleware\DeliveryMiddleware::class, 
+        ]);
+    })
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();

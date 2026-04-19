@@ -1,0 +1,24 @@
+# Node & Composer
+/Tungal_Flower_Shop-master/node_modules
+/Tungal_Flower_Shop-master/vendor
+
+# Environment
+/Tungal_Flower_Shop-master/.env
+
+# Laravel Core Generated Files
+/Tungal_Flower_Shop-master/bootstrap/cache/*.php
+/Tungal_Flower_Shop-master/storage/framework/cache/data/*
+/Tungal_Flower_Shop-master/storage/framework/sessions/*
+/Tungal_Flower_Shop-master/storage/framework/views/*.php
+/Tungal_Flower_Shop-master/storage/logs/*.log
+/Tungal_Flower_Shop-master/storage/*.key
+
+# Public & Vite
+/Tungal_Flower_Shop-master/public/storage
+/Tungal_Flower_Shop-master/public/build
+/Tungal_Flower_Shop-master/public/hot
+
+# General overrides just in case
+/node_modules
+/vendor
+.env
