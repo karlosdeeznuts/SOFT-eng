@@ -10,6 +10,10 @@ Route::middleware(['auth',AdminMiddleware::class])->group(function () {
     Route::get('/admin/dashboard', [UserController::class,'dashboard'])
     ->name('admin.dashboard');
 
+    Route::get('/admin/report', function () {
+        return inertia('Admin/Report');
+    })->name('admin.report');
+
     // ----------------------------------------------------------------------------
 
     // Sales-Features Routes
@@ -46,9 +50,6 @@ Route::middleware(['auth',AdminMiddleware::class])->group(function () {
 
     // ----------------------------------------------------------------------------
     // Employee-Feature Routes
-    Route::get('/admin/employee/addEmployee', function () {
-        return inertia('Admin/Employee_Features/AddEmployee');
-    })->name('employee.addEmployee');
 
     Route::post('/admin/employee/addEmployee/store',[UserController::class,'storeEmployeeData'])->name('employee.storeEmployeeData');
 

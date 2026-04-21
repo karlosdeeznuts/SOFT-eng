@@ -1,248 +1,193 @@
-import React, { useEffect, useState } from 'react'
-import AdminLayout from '../../../Layout/AdminLayout'
-import profile from '../../../../../public/assets/images/profile.png'
-import { Link, useForm, usePage } from '@inertiajs/react';
-import { useRoute } from '../../../../../vendor/tightenco/ziggy'
+import React, { useEffect, useState, useRef } from 'react';
+import { useForm, usePage } from '@inertiajs/react';
+import { useRoute } from '../../../../../vendor/tightenco/ziggy';
 import { Toaster, toast } from 'sonner';
 
+const UploadIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6C757D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="17 8 12 3 7 8"></polyline>
+        <line x1="12" y1="3" x2="12" y2="15"></line>
+    </svg>
+);
 
-function AddEmployee() {
-
+export default function AddEmployee({ isOpen, onClose }) {
     const route = useRoute();
-
-    // Toggle Show / Hide Password
-    const [showPassword, setShowPassword] = useState(false);
-
-    const togglePassword = () => {
-        setShowPassword(!showPassword);
-    };
-
-    // State for image preview
+    const fileInputRef = useRef(null);
     const [imagePreview, setImagePreview] = useState(null);
 
-    // Handle file selection and set image preview
+    const { data, setData, post, processing, errors, reset } = useForm({
+        profile: '',
+        firstname: '',
+        lastname: '',
+        address: '',
+        contact_number: '',
+        username: '',
+        role: 'Cashier',
+        password: '', 
+        hired_date: '',
+    });
+
     const handleImageChange = (e) => {
         const file = e.target.files[0];
-        setData('profile', file); // Set the file to the Inertia form
-
+        setData('profile', file); 
         if (file) {
-            setImagePreview(URL.createObjectURL(file)); // Generate preview URL
+            setImagePreview(URL.createObjectURL(file)); 
         } else {
-            setImagePreview(null); // Reset preview if no file is selected
+            setImagePreview(null); 
         }
     };
 
-    // Inertia Form Helper
-    const { data, setData, post, processing, errors, reset } = useForm({
-        'firstname': '',
-        'lastname': '',
-        'contact_number': '',
-        'role': 'Employee',
-        'username': '',
-        'password': '',
-        'profile': '',
-    });
-
     function submit(e) {
         e.preventDefault();
-
         post(route('employee.storeEmployeeData'), {
-            onSuccess() {
+            onSuccess: () => {
                 reset();
-
                 setData('profile', 'null');
                 setImagePreview(null);
+                onClose();
             }
         });
     }
 
-    // console.log(useForm()); to show all the useForm functions
-
-    // Use useEffect to trigger toast notifications
-    const { flash } = usePage().props
+    const { flash } = usePage().props;
 
     useEffect(() => {
-        flash.success ? toast.success(flash.success) : null;
-        flash.error ? toast.error(flash.error) : null;
+        if (flash.success) toast.success(flash.success);
+        if (flash.error) toast.error(flash.error);
     }, [flash]);
 
+    if (!isOpen) return null;
+
     return (
-        <div className='py-3'>
-            {/* Initialize the Sooner Toaster */}
-            <Toaster position='top-right' expand={true} richColors />
+        <div 
+            className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" 
+            style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050, padding: '15px' }}
+        >
+            <Toaster position="top-right" expand={true} richColors />
 
-            <form onSubmit={submit}>
-                <nav aria-label="breadcrumb" className='mb-3'>
-                    <ol class="breadcrumb fw-semibold">
-                        <Link href={route('admin.employee')} className="breadcrumb-item text-success" style={{ textDecoration: 'none' }}>Back</Link>
-                        <li class="breadcrumb-item active" aria-current="page">Add Employee</li>
-                    </ol>
-                </nav>
+            <div 
+                className="card shadow-lg border-0" 
+                style={{ 
+                    borderRadius: '16px', 
+                    width: '100%', 
+                    maxWidth: '550px',
+                    backgroundColor: '#FFF'
+                }}
+            >
+                <div className="card-body px-4 py-4">
+                    <form onSubmit={submit}>
 
-                <div className="row justify-content-evenly">
-                    <div className="col-md-4 d-flex flex-column align-items-center">
-                        {/* Image Preview */}
-                        {
-                            imagePreview ? (
-                                <div className="text-center mb-3">
-                                    <img
-                                        src={imagePreview}
-                                        alt="Preview Image"
-                                        className="object-fit-cover rounded-lg shadow mb-3"
-                                        style={{ width: '200px', height: '200px' }}
+                        {/* IMAGE SECTION */}
+                        <div className="text-center mb-3">
+                            <h6 className="fw-bold text-dark mb-2" style={{ fontSize: '14px' }}>Employee Image</h6>
+                            <div 
+                                className="d-flex flex-column justify-content-center align-items-center mx-auto"
+                                style={{ 
+                                    border: '2px dashed #DADDE1',
+                                    backgroundColor: '#F8F9FA',
+                                    borderRadius: '10px',
+                                    height: '90px',
+                                    maxWidth: '300px',
+                                    cursor: 'pointer'
+                                }}
+                                onClick={() => fileInputRef.current.click()}
+                            >
+                                {imagePreview ? (
+                                    <img 
+                                        src={imagePreview} 
+                                        alt="Preview" 
+                                        className="object-fit-cover rounded"
+                                        style={{ height: '100%', width: '100%' }}
                                     />
-                                </div>
-                            ) : (
-                                <div className="text-center mb-3">
-                                    <img
-                                        src={profile}
-                                        alt="Default Profile"
-                                        className="object-fit-cover mb-3"
-                                        style={{ width: '200px', height: '200px' }}
-                                    />
-                                </div>
-                            )
-                        }
-
-                        <input
-                            type="file"
-                            className="form-control"
-                            onChange={handleImageChange}
-                        />
-
-                        {
-                            errors.profile && (
-                                <div className="text-danger mt-2 mt-2">{errors.profile}</div>
-                            )
-                        }
-                    </div>
-                    <div className="col-md-7">
-                        <div className="card shadow rounded border-0">
-                            <div className="card-header bg-success text-light p-3">
-                                <p>Fill in all the information.</p>
+                                ) : (
+                                    <>
+                                        <UploadIcon />
+                                        <p className="text-muted mt-1 mb-0" style={{ fontSize: '12px' }}>Drag or Click to Upload</p>
+                                    </>
+                                )}
                             </div>
-                            <div className="card-body bg-light">
-                                <div className="d-flex align-items-center gap-3 mb-3">
-                                    <div className='w-100'>
-                                        <label htmlFor="firstname" className="form-label">Firstname</label>
-                                        <input
-                                            type="text"
-                                            className={
-                                                `form-control shadow-sm ${errors.firstname ? 'border border-danger' : 'mb-3'}`
-                                            }
-                                            id='firstname'
-                                            value={data.firstname}
-                                            onChange={(e) => setData('firstname', e.target.value)}
-                                        />
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                className="d-none" 
+                                onChange={handleImageChange} 
+                                accept="image/png, image/jpeg, image/jpg" 
+                            />
+                            {errors.profile && <div className="text-danger mt-1" style={{ fontSize: '12px' }}>{errors.profile}</div>}
+                        </div>
 
-                                        {
-                                            errors.firstname && <p className='text-danger mt-2'>{errors.firstname}</p>
-                                        }
-                                    </div>
+                        {/* TITLE */}
+                        <h4 className="fw-bold text-center mb-3">Add Employee</h4>
 
-                                    <div className='w-100'>
-                                        <label htmlFor="lastname" className="form-label">Lastname</label>
-                                        <input
-                                            type="text"
-                                            className={
-                                                `form-control shadow-sm ${errors.lastname ? 'border border-danger' : 'mb-3'}`
-                                            }
-                                            id='lastname'
-                                            value={data.lastname}
-                                            onChange={(e) => setData('lastname', e.target.value)}
-                                        />
+                        {/* FORM - Tightly packed */}
+                        <div className="row g-2">
+                            <div className="col-12">
+                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>First Name</label>
+                                <input type="text" className={`form-control form-control-sm ${errors.firstname ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} placeholder="e.g. John" value={data.firstname} onChange={(e) => setData('firstname', e.target.value)} />
+                                {errors.firstname && <div className="invalid-feedback">{errors.firstname}</div>}
+                            </div>
 
-                                        {
-                                            errors.lastname && <p className='text-danger mt-2'>{errors.lastname}</p>
-                                        }
-                                    </div>
-                                </div>
+                            <div className="col-12">
+                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Last Name</label>
+                                <input type="text" className={`form-control form-control-sm ${errors.lastname ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} placeholder="e.g. Doe" value={data.lastname} onChange={(e) => setData('lastname', e.target.value)} />
+                                {errors.lastname && <div className="invalid-feedback">{errors.lastname}</div>}
+                            </div>
 
-                                <div className="mb-3">
-                                    <label htmlFor="contact" className="form-label">Contact Number</label>
-                                    <input
-                                        type="text"
-                                        className={
-                                            `form-control shadow-sm ${errors.contact_number ? 'border border-danger' : 'mb-3'}`
-                                        }
-                                        id='contact'
-                                        value={data.contact_number}
-                                        onChange={(e) => setData('contact_number', e.target.value)}
-                                    />
+                            <div className="col-12">
+                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Address</label>
+                                <input type="text" className={`form-control form-control-sm ${errors.address ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} placeholder="Enter full address" value={data.address} onChange={(e) => setData('address', e.target.value)} />
+                                {errors.address && <div className="invalid-feedback">{errors.address}</div>}
+                            </div>
 
-                                    {
-                                        errors.contact_number && <p className='text-danger mt-2'>{errors.contact_number}</p>
-                                    }
-                                </div>
+                            <div className="col-12">
+                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Contact #</label>
+                                <input type="text" className={`form-control form-control-sm ${errors.contact_number ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} placeholder="Enter contact number" value={data.contact_number} onChange={(e) => setData('contact_number', e.target.value)} />
+                                {errors.contact_number && <div className="invalid-feedback">{errors.contact_number}</div>}
+                            </div>
 
-                                <div className="mb-3">
-                                    <label htmlFor="role" className="form-label">Role</label>
-                                    <select
-                                        className="form-select"
-                                        id='role'
-                                        value={data.role}
-                                        onChange={(e) => setData('role', e.target.value)}
-                                    >
-                                        <option value="Employee">Employee</option>
-                                        <option value="Admin">Admin</option>
-                                    </select>
-                                </div>
+                            <div className="col-md-6">
+                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Username</label>
+                                <input type="text" className={`form-control form-control-sm ${errors.username ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} placeholder="Username" value={data.username} onChange={(e) => setData('username', e.target.value)} />
+                                {errors.username && <div className="invalid-feedback">{errors.username}</div>}
+                            </div>
 
-                                <div className="mb-3">
-                                    <label htmlFor="username" className="form-label">Username</label>
-                                    <input
-                                        type="text"
-                                        className={
-                                            `form-control shadow-sm ${errors.username ? 'border border-danger' : 'mb-3'}`
-                                        }
-                                        id='username'
-                                        value={data.username}
-                                        onChange={(e) => setData('username', e.target.value)}
-                                    />
+                            <div className="col-md-6">
+                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Role</label>
+                                <select className="form-select form-select-sm" style={{ borderRadius: '8px' }} value={data.role} onChange={(e) => setData('role', e.target.value)}>
+                                    <option>Cashier</option>
+                                    <option>Delivery Personnel</option>
+                                    <option>Manager</option>
+                                    <option>Admin</option>
+                                </select>
+                            </div>
 
-                                    {
-                                        errors.username && <p className='text-danger mt-2'>{errors.username}</p>
-                                    }
-                                </div>
+                            {/* Grouping Password and Date side-by-side to save height */}
+                            <div className="col-md-6">
+                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Password</label>
+                                <input type="password" className={`form-control form-control-sm ${errors.password ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} placeholder="Password" value={data.password} onChange={(e) => setData('password', e.target.value)} />
+                                {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+                            </div>
 
-                                <div className="mb-3">
-                                    <label htmlFor="password" className="form-label">Password</label>
-                                    <input
-                                        type={showPassword ? 'text' : 'password'}
-                                        className={
-                                            `form-control shadow-sm ${errors.password ? 'border border-danger' : 'mb-3'}`
-                                        }
-                                        id='password'
-                                        value={data.password}
-                                        onChange={(e) => setData('password', e.target.value)}
-                                    />
-
-                                    {
-                                        errors.password && <p className='text-danger mt-2'>{errors.password}</p>
-                                    }
-                                </div>
-
-                                <div class="form-check mb-4">
-                                    <input
-                                        className="form-check-input shadow-sm"
-                                        type="checkbox"
-                                        id="show"
-                                        onClick={togglePassword}
-                                    />
-                                    <label class="form-check-label" for="show">
-                                        Show password
-                                    </label>
-                                </div>
-
-                                <input type="submit" className="btn btn-success shadow w-100 mb-2" disabled={processing} />
+                            <div className="col-md-6">
+                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Hired Date</label>
+                                <input type="date" className={`form-control form-control-sm ${errors.hired_date ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} value={data.hired_date} onChange={(e) => setData('hired_date', e.target.value)} />
+                                {errors.hired_date && <div className="invalid-feedback">{errors.hired_date}</div>}
                             </div>
                         </div>
-                    </div>
-                </div>
-            </form>
-        </div >
-    )
-}
 
-AddEmployee.layout = page => <AdminLayout children={page} />
-export default AddEmployee
+                        {/* BUTTONS */}
+                        <div className="d-flex justify-content-center gap-3 mt-4">
+                            <button type="button" onClick={onClose} className="btn btn-sm fw-bold text-white px-4" style={{ backgroundColor: '#DC3545', borderRadius: '8px', minWidth: '120px', padding: '8px' }}>
+                                Cancel
+                            </button>
+                            <button type="submit" disabled={processing} className="btn btn-sm fw-bold text-white px-4" style={{ backgroundColor: '#0D6EFD', borderRadius: '8px', minWidth: '120px', padding: '8px' }}>
+                                {processing ? 'Submitting...' : 'Submit'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+}

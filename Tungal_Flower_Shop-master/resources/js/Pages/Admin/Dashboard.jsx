@@ -1,55 +1,144 @@
 import React from 'react'
-import { FaCoins } from "react-icons/fa6";
-import { BsBagFill } from "react-icons/bs";
+import { BsBoxSeam } from "react-icons/bs";
+import { HiOutlinePencil } from "react-icons/hi2";
+import { BsFileText } from "react-icons/bs";
 import SalesChart from '../../Layout/SalesChart';
 import AdminLayout from '../../Layout/AdminLayout'
-import InventoryLevelChart from '../../Layout/InventoryLevelChart';
-import { Head } from '@inertiajs/react';
 
-function Dashboard({ sales_revenue, product_sold, topSellingProducts, inventoryLevels }) {
-    // console.log(sales_revenue);
-    // console.log(product_sold);
-    // console.log(topSellingProducts);
-
+function Dashboard({ topSellingProducts }) {
+    
     return (
-        <div>
-            <div className="d-flex align-items-center gap-3 mb-5">
-                <div className="card shadow rounded border-0 bg-success text-white w-100">
-                    <div className="card-body d-flex align-items-center gap-3">
-                        <div className="bg-white text-dark rounded-circle shadow-lg p-3 d-flex justify-content-center align-items-center" >
-                            <FaCoins className='fs-4' />
-                        </div>
+        <div className="container-fluid p-0">
+            <h2 className="fw-bold mb-4" style={{ color: '#1a1d2d' }}>Dashboard</h2>
 
-                        <div className='d-flex flex-column'>
-                            <h4 className="card-title">Total Sales Revenue</h4>
-                            <h4 className="card-text">₱{sales_revenue}</h4>
+            {/* Top Metric Cards */}
+            <div className="row g-4 mb-4">
+                <div className="col-12 col-md-4">
+                    <div className="card shadow-sm border-0 text-white h-100" style={{ backgroundColor: '#5873d1', borderRadius: '12px' }}>
+                        <div className="card-body p-4 d-flex justify-content-between align-items-center">
+                            <div>
+                                <p className="mb-1" style={{ fontSize: '0.95rem' }}>Total Flowers in Store</p>
+                                <h1 className="fw-bold mb-0 display-5">200</h1>
+                            </div>
+                            <BsBoxSeam style={{ fontSize: '2.5rem', opacity: '0.9' }} />
                         </div>
                     </div>
                 </div>
-                <div className="card shadow rounded border-0 bg-success text-white w-100">
-                    <div className="card-body d-flex align-items-center gap-3">
-                        <div className="bg-white text-dark rounded-circle shadow-lg p-3 d-flex justify-content-center align-items-center" >
-                            <BsBagFill className='fs-4' />
-                        </div>
-
-                        <div className='d-flex flex-column'>
-                            <h4 className="card-title">Total Products Sold</h4>
-                            <h4 className="card-text">{product_sold}</h4>
+                <div className="col-12 col-md-4">
+                    <div className="card shadow-sm border-0 text-white h-100" style={{ backgroundColor: '#707584', borderRadius: '12px' }}>
+                        <div className="card-body p-4 d-flex justify-content-between align-items-center">
+                            <div>
+                                <p className="mb-1" style={{ fontSize: '0.95rem' }}>Total Flowers Orders</p>
+                                <h1 className="fw-bold mb-0 display-5 d-inline-block me-2">52</h1>
+                                <span style={{ fontSize: '0.8rem', opacity: '0.8' }}>(last 30 days)</span>
+                            </div>
+                            <HiOutlinePencil style={{ fontSize: '2rem', opacity: '0.9' }} />
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className='card shadow rounded mb-5'>
-                <div className="card-body">
-                    <h3 className='text-center'>Top-Selling Products</h3>
-                    <SalesChart topSellingProducts={topSellingProducts} />
+            {/* Middle Row Charts & Stats */}
+            <div className="row g-4 mb-4">
+                <div className="col-12 col-lg-7">
+                    <div className="card shadow-sm border-0 h-100" style={{ borderRadius: '12px' }}>
+                        <div className="card-body p-4">
+                            <h5 className="fw-bold" style={{ color: '#6d78e3' }}>Sales Summary <span className="text-muted fw-normal fs-6">(last 30 days)</span></h5>
+                            <div className="mt-4" style={{ height: '250px' }}>
+                                {/* Reusing your existing chart component here as a placeholder for the bar chart */}
+                                <SalesChart topSellingProducts={topSellingProducts} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-12 col-lg-5">
+                    <div className="card shadow-sm border-0 h-100" style={{ borderRadius: '12px' }}>
+                        <div className="card-body p-4">
+                            <h5 className="fw-bold text-center mb-4" style={{ color: '#6d78e3' }}>Stock Numbers</h5>
+                            
+                            <div className="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                <span className="fw-bold" style={{ color: '#de5b62' }}>Low Stock Flower Categories</span>
+                                <span className="fw-bold" style={{ color: '#de5b62' }}>12</span>
+                            </div>
+                            <div className="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                <span className="text-secondary fw-semibold">Flower Categories</span>
+                                <span className="fw-bold text-dark">15</span>
+                            </div>
+                            <div className="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                <span className="text-secondary fw-semibold">Recently added amount</span>
+                                <span className="fw-bold text-dark">13</span>
+                            </div>
+                            <div className="d-flex justify-content-between align-items-center mt-4">
+                                <span className="fw-bold" style={{ color: '#db8435' }}>Returned/Damaged Flowers</span>
+                                <span className="fw-bold" style={{ color: '#db8435' }}>13</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div className='card shadow rounded mb-5'>
-                <div className="card-body">
-                    <h3 className='text-center'>Inventory Levels</h3>
-                    <InventoryLevelChart inventoryData={inventoryLevels} />
+
+            {/* Bottom Row Best/Least Sellers */}
+            <div className="row g-4">
+                <div className="col-12 col-lg-6">
+                    <div className="card shadow-sm border-0 h-100" style={{ borderRadius: '12px' }}>
+                        <div className="card-body p-4 d-flex flex-column">
+                            <h5 className="fw-bold mb-4" style={{ color: '#6d78e3' }}>Top Selling Flowers <span className="text-muted fw-normal fs-6">(last 30 days)</span></h5>
+                            <div className="row flex-grow-1 text-center g-3">
+                                <div className="col-4">
+                                    <div className="p-3 rounded h-100 d-flex flex-column justify-content-center" style={{ backgroundColor: '#8ea9f9' }}>
+                                        <p className="fw-bold text-dark mb-2">Red Roses</p>
+                                        <h4 className="fw-bold text-dark mb-0">742</h4>
+                                    </div>
+                                </div>
+                                <div className="col-4">
+                                    <div className="p-3 rounded h-100 d-flex flex-column justify-content-center" style={{ backgroundColor: '#a1c1ff' }}>
+                                        <p className="fw-bold text-dark mb-2">Purple Tulip</p>
+                                        <h4 className="fw-bold text-dark mb-0">250</h4>
+                                    </div>
+                                </div>
+                                <div className="col-4">
+                                    <div className="p-3 rounded h-100 d-flex flex-column justify-content-center" style={{ backgroundColor: '#d0d4ef' }}>
+                                        <p className="fw-bold text-dark mb-2">Sunflowers</p>
+                                        <h4 className="fw-bold text-dark mb-0">43</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-center mt-4">
+                                <a href="#" className="text-decoration-none fw-bold" style={{ color: '#44519e' }}><BsFileText /> View Report</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="col-12 col-lg-6">
+                    <div className="card shadow-sm border-0 h-100" style={{ borderRadius: '12px' }}>
+                        <div className="card-body p-4 d-flex flex-column">
+                            <h5 className="fw-bold mb-4" style={{ color: '#de5b62' }}>Least Selling Flowers <span className="text-muted fw-normal fs-6">(last 30 days)</span></h5>
+                            <div className="row flex-grow-1 text-center g-3">
+                                <div className="col-4">
+                                    <div className="p-3 rounded h-100 d-flex flex-column justify-content-center" style={{ backgroundColor: '#ef7d84' }}>
+                                        <p className="fw-bold text-dark mb-2">Lily</p>
+                                        <h4 className="fw-bold text-dark mb-0">14</h4>
+                                    </div>
+                                </div>
+                                <div className="col-4">
+                                    <div className="p-3 rounded h-100 d-flex flex-column justify-content-center" style={{ backgroundColor: '#f6a9ae' }}>
+                                        <p className="fw-bold text-dark mb-2">Yellow Roses</p>
+                                        <h4 className="fw-bold text-dark mb-0">15</h4>
+                                    </div>
+                                </div>
+                                <div className="col-4">
+                                    <div className="p-3 rounded h-100 d-flex flex-column justify-content-center" style={{ backgroundColor: '#fbd1d6' }}>
+                                        <p className="fw-bold text-dark mb-2">Tulip</p>
+                                        <h4 className="fw-bold text-dark mb-0">18</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-center mt-4">
+                                <a href="#" className="text-decoration-none fw-bold" style={{ color: '#de5b62' }}><BsFileText /> View Report</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
