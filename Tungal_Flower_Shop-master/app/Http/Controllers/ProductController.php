@@ -93,21 +93,17 @@ class ProductController extends Controller
     }
 
     public function addToCart(Request $request){
-        // dd($request);
         $fields = $request->validate([
             'product_id' => 'required|integer',
             'quantity' => 'required|integer',
         ]);
 
-        $user = auth()->user(); // Get the authenticated user
+        $user = auth()->user();
 
         $product = Product::find($request->product_id);
 
-        // Check if the product you want to store is already listed in the cart
         $existingProduct = Cart::where('product_id',$fields['product_id'])
         ->where('user_id',$user->id)->first();
-
-        // dd($existingProduct);
 
         if($existingProduct){
             $updateCart = Cart::where('id', $existingProduct->id)->update([
@@ -116,11 +112,10 @@ class ProductController extends Controller
             ]);
 
             if($updateCart){
-                return redirect()->route('customer.showProduct',['product_id' => $fields['product_id']])
-                ->with('success',$product->product_name . ' add to cart successfully.');
+                // FIXED: Return back instead of navigating away
+                return redirect()->back()->with('success',$product->product_name . ' add to cart successfully.');
             }else{
-                return redirect()->route('customer.showProduct',['product_id' => $fields['product_id']])
-                ->with('error',"Product can't add to cart.");
+                return redirect()->back()->with('error',"Product can't add to cart.");
             }
         }else{
             if($product){
@@ -132,11 +127,10 @@ class ProductController extends Controller
                 ]);
 
                 if($addToCart){
-                    return redirect()->route('customer.showProduct',['product_id' => $fields['product_id']])
-                    ->with('success',$product->product_name . ' add to cart successfully.');
+                    // FIXED: Return back instead of navigating away
+                    return redirect()->back()->with('success',$product->product_name . ' add to cart successfully.');
                 }else{
-                    return redirect()->route('customer.showProduct',['product_id' => $fields['product_id']])
-                    ->with('error',"Product can't add to cart.");
+                    return redirect()->back()->with('error',"Product can't add to cart.");
                 }
             }
         }

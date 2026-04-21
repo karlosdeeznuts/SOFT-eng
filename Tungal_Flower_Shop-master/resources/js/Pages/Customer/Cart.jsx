@@ -1,152 +1,252 @@
-import React from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import CustomerLayout from '../../Layout/CustomerLayout';
+import ProductCard from '../../Components/ProductCard';
 
-function BackIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
+// Icons
+function BackIcon() { return (<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>); }
+function TrashIcon() { return (<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 6H5H21" stroke="#FF4D4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="#FF4D4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>); }
+function CartIcon() { return (<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M17 18C15.89 18 15 18.89 15 20C15 20.5304 15.2107 21.0391 15.5858 21.4142C15.9609 21.7893 16.4696 22 17 22C17.5304 22 18.0391 21.7893 18.4142 21.4142C18.7893 21.0391 19 20.5304 19 20C19 19.4696 18.7893 18.9609 18.4142 18.5858C18.0391 18.2107 17.5304 18 17 18ZM1 2V4H3L6.6 11.59L5.24 14.04C5.09 14.32 5 14.65 5 15C5 15.5304 5.21071 16.0391 5.58579 16.4142C5.96086 16.7893 6.46957 17 7 17H19V15H7.42C7.3537 15 7.29011 14.9737 7.24322 14.9268C7.19634 14.8799 7.17 14.8163 7.17 14.75C7.17 14.7 7.18 14.66 7.2 14.63L8.1 13H15.55C16.3 13 16.96 12.58 17.3 11.97L20.88 5.5C20.95 5.34 21 5.17 21 5C21 4.73478 20.8946 4.48043 20.7071 4.29289C20.5196 4.10536 20.2652 4 20 4H5.21L4.27 2M7 18C5.89 18 5 18.89 5 20C5 20.5304 5.21071 21.0391 5.58579 21.4142C5.96086 21.7893 6.46957 22 7 22C7.53043 22 8.03914 21.7893 8.41421 21.4142C8.78929 21.0391 9 20.5304 9 20C9 19.4696 8.78929 18.9609 8.41421 18.5858C8.03914 18.2107 7.53043 18 7 18Z" fill="currentColor"/></svg>); }
+function RefundIcon() { return (<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M22.0049 7H2.00488V4C2.00488 3.73478 2.11024 3.48043 2.29778 3.29289C2.48531 3.10536 2.73967 3 3.00488 3H21.0049C21.2701 3 21.5245 3.10536 21.712 3.29289C21.8995 3.48043 22.0049 3.73478 22.0049 4V7ZM22.0049 9V20C22.0049 20.2652 21.8995 20.5196 21.712 20.7071C21.5245 20.8946 21.2701 21 21.0049 21H3.00488C2.73967 21 2.48531 20.8946 2.29778 20.7071C2.11024 20.5196 2.00488 20.2652 2.00488 20V9H22.0049ZM11.0049 14V11.5L6.50488 16H17.0049V14H11.0049Z" fill="currentColor"/></svg>); }
 
-function Cart({ cart_items, total_price }) {
+function Cart({ carts, total, products }) {
+  const { auth } = usePage().props;
+  const cartList = carts?.data || [];
+  
+  const numericTotal = parseFloat(total) || 0;
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  // Handlers to trigger your existing Controller routes
+  const { data, setData, post, processing, errors, reset } = useForm({
+    cart_id: [],
+    total: numericTotal,
+    cash_received: ''
+  });
+
   const handleUpdateQuantity = (cartId, currentQuantity, change) => {
     const newQuantity = currentQuantity + change;
-    if (newQuantity < 1) return; // Prevent 0 quantity
+    if (newQuantity < 1) return;
     router.post(route('customer.updateCartQuantity'), { cart_id: cartId, quantity: newQuantity }, { preserveScroll: true });
   };
 
   const handleRemove = (cartId) => {
-    router.post(route('customer.removeFromCart'), { cart_id: cartId }, { preserveScroll: true });
+    router.get(route('customer.removeItem', { cart_id: cartId }), {}, { preserveScroll: true });
   };
 
+  const handleOpenPayment = () => {
+    setData({
+      cart_id: cartList.map(item => item.id),
+      total: numericTotal,
+      cash_received: ''
+    });
+    setShowPaymentModal(true);
+  };
+
+  const submitPayment = (e) => {
+    e.preventDefault();
+    post(route('customer.checkout'), {
+      preserveScroll: true,
+      onSuccess: () => {
+        setShowPaymentModal(false);
+        reset();
+      }
+    });
+  };
+
+  const numericCash = parseFloat(data.cash_received) || 0;
+  const isPaymentValid = numericCash >= numericTotal && data.cash_received !== '';
+  const changeAmount = isPaymentValid ? (numericCash - numericTotal).toFixed(2) : '0.00';
+
   return (
-    <div className="container-fluid py-5 px-4">
-      <Head title="Sales Order" />
+    <div className="position-relative" style={{ minHeight: '100vh', backgroundColor: '#F5F4FF' }}>
+      <Head title="Sales Order Details" />
 
-      {/* Header */}
-      <div className="d-flex align-items-center gap-3 mb-5 mt-3">
-        <Link 
-            href={route('customer.product')} 
-            className="btn btn-light shadow-sm d-flex align-items-center justify-content-center"
-            style={{ width: '56px', height: '56px', borderRadius: '10px', border: '1px solid #dee2e6' }}
-        >
-          <BackIcon />
-        </Link>
-        <h1 className="fw-bold m-0" style={{ color: '#1E1E1E', fontSize: '2.5rem' }}>Sales Order</h1>
+      {/* =========================================
+          BACKGROUND: The Products Dashboard (Faded out)
+      ============================================= */}
+      <div className="container-fluid py-5 px-4" style={{ filter: 'blur(3px)', opacity: 0.5, pointerEvents: 'none', userSelect: 'none' }}>
+        <div className="mb-2">
+          <h4 className="text-muted fw-normal" style={{ color: '#1E1E1E' }}>
+            Hi, {auth?.user ? auth.user.firstname : 'User'}!
+          </h4>
+        </div>
+        <div className="d-flex justify-content-between align-items-center mb-5 mt-3">
+          <h1 className="fw-bold m-0" style={{ color: '#1E1E1E', fontSize: '2.5rem' }}>Products</h1>
+          <div className="d-flex gap-3">
+            <button className="btn d-flex align-items-center gap-2 fw-bold text-white shadow-sm" style={{ backgroundColor: '#7DA0FA', borderRadius: '10px', height: '56px' }}>
+              <RefundIcon /> Request Refund
+            </button>
+            <button className="btn d-flex align-items-center gap-2 fw-bold text-white shadow-sm" style={{ backgroundColor: '#6C63FF', borderRadius: '10px', height: '56px' }}>
+              <CartIcon /> Cart
+            </button>
+          </div>
+        </div>
+        <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4">
+          {products?.data?.length > 0 && products.data.map((product) => (
+            <div className="col" key={product.id}>
+              {/* Passing a dummy function to onBuyClick since background isn't clickable anyway */}
+              <ProductCard id={product.id} name={product.product_name} price={product.price} stock={product.stocks} image={product.image} onBuyClick={() => {}} />
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="row g-4">
-        {/* Left Side: Item List */}
-        <div className="col-12 col-xl-8">
-          <div className="card border-0 shadow-sm" style={{ borderRadius: '15px' }}>
-            <div className="card-header bg-white border-0 pt-4 pb-0 px-4">
-              <h5 className="fw-bold" style={{ color: '#7978E9' }}>Order Details</h5>
+      {/* =========================================
+          FOREGROUND DIALOG: SALES ORDER (CART)
+      ============================================= */}
+      {!showPaymentModal && (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1050 }} tabIndex="-1">
+          <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '15px', backgroundColor: '#F5F4FF', minHeight: '80vh' }}>
+              
+              {/* Modal Header */}
+              <div className="modal-header border-0 pb-0 pt-4 px-4 d-flex align-items-center gap-3">
+                {/* Back button returns to the real Product dashboard */}
+                <Link 
+                    href={route('customer.product')} 
+                    className="btn btn-light shadow-sm d-flex align-items-center justify-content-center"
+                    style={{ width: '50px', height: '50px', borderRadius: '10px', border: '1px solid #dee2e6' }}
+                >
+                  <BackIcon />
+                </Link>
+                <h2 className="fw-bold m-0" style={{ color: '#1E1E1E' }}>Sales Order Details</h2>
+              </div>
+
+              {/* Modal Body */}
+              <div className="modal-body p-4">
+                <div className="row g-4">
+                  {/* Left Side: Product List */}
+                  <div className="col-12 col-xl-8">
+                    <div className="d-flex flex-column gap-3">
+                      {cartList.length > 0 ? (
+                        cartList.map((item) => (
+                          <div key={item.id} className="card border-0 shadow-sm" style={{ borderRadius: '15px' }}>
+                            <div className="card-body p-3 d-flex align-items-center justify-content-between">
+                              
+                              <div className="d-flex align-items-center gap-3" style={{ width: '35%' }}>
+                                <img src={`/storage/${item.product.image}`} alt={item.product.product_name} className="object-fit-cover" style={{ width: '80px', height: '80px', borderRadius: '10px' }} />
+                                <span className="fw-bold fs-5 text-dark text-truncate">{item.product.product_name}</span>
+                              </div>
+
+                              <div className="fw-bold text-muted" style={{ width: '15%', fontSize: '1.1rem' }}>
+                                ₱{item.product.price}
+                              </div>
+
+                              <div className="d-flex align-items-center justify-content-center gap-3" style={{ width: '20%' }}>
+                                <span className="text-muted fw-bold">Qty:</span>
+                                <span className="fw-bold fs-5">{item.quantity}</span>
+                              </div>
+
+                              <div className="d-flex align-items-center justify-content-end gap-4" style={{ width: '30%' }}>
+                                <span className="fw-bold fs-4" style={{ color: '#6C63FF' }}>₱{(item.product.price * item.quantity).toFixed(2)}</span>
+                                <button onClick={() => handleRemove(item.id)} className="btn btn-light rounded-circle shadow-sm d-flex align-items-center justify-content-center" style={{ width: '45px', height: '45px' }}>
+                                    <TrashIcon />
+                                </button>
+                              </div>
+
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="card border-0 shadow-sm" style={{ borderRadius: '15px' }}>
+                          <div className="card-body p-5 text-center text-muted">
+                            <h4>Your cart is empty.</h4>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Side: Order Summary */}
+                  <div className="col-12 col-xl-4">
+                    <div className="card border-0 shadow-sm" style={{ borderRadius: '15px', backgroundColor: '#FFFFFF' }}>
+                      <div className="card-body p-4 d-flex flex-column h-100">
+                        <h5 className="fw-bold mb-4" style={{ color: '#1E1E1E' }}>Order Summary</h5>
+                        <div className="d-flex justify-content-between mb-3">
+                          <span className="text-muted fw-semibold">Items ({cartList.length})</span>
+                          <span className="fw-bold text-dark">₱{numericTotal.toFixed(2)}</span>
+                        </div>
+                        <div className="d-flex justify-content-between mb-4">
+                          <span className="text-muted fw-semibold">Tax (VAT Included)</span>
+                          <span className="fw-bold text-dark">₱0.00</span>
+                        </div>
+                        <hr style={{ borderColor: '#dee2e6' }} />
+                        <div className="d-flex justify-content-between align-items-center my-4">
+                          <span className="fw-bold fs-5" style={{ color: '#1E1E1E' }}>Total</span>
+                          <span className="fw-bold fs-3" style={{ color: '#7978E9' }}>₱{numericTotal.toFixed(2)}</span>
+                        </div>
+                        <button 
+                          onClick={handleOpenPayment}
+                          disabled={!cartList.length}
+                          className="btn w-100 fw-bold text-white py-3 mt-auto"
+                          style={{ backgroundColor: '#6C63FF', borderRadius: '10px', fontSize: '1.1rem' }}
+                        >
+                          Proceed to Payment
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
-            <div className="card-body p-4">
-              <div className="table-responsive">
-                <table className="table align-middle">
-                  <thead className="text-muted" style={{ fontSize: '0.85rem', textTransform: 'uppercase' }}>
-                    <tr>
-                      <th scope="col" className="border-0 pb-3">Product</th>
-                      <th scope="col" className="border-0 pb-3">Price</th>
-                      <th scope="col" className="border-0 pb-3 text-center">Quantity</th>
-                      <th scope="col" className="border-0 pb-3 text-end">Total</th>
-                      <th scope="col" className="border-0 pb-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cart_items?.length > 0 ? (
-                      cart_items.map((item) => (
-                        <tr key={item.id} style={{ borderBottom: '1px solid #f8f9fa' }}>
-                          <td className="py-3">
-                            <div className="d-flex align-items-center gap-3">
-                              <img 
-                                src={`/storage/${item.product.image}`} 
-                                alt={item.product.product_name} 
-                                className="object-fit-cover rounded" 
-                                style={{ width: '60px', height: '60px', border: '1px solid #dee2e6' }} 
-                              />
-                              <span className="fw-bold text-dark">{item.product.product_name}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 fw-semibold text-muted">₱{item.product.price}</td>
-                          <td className="py-3">
-                            <div className="d-flex align-items-center justify-content-center gap-2">
-                              <button 
-                                onClick={() => handleUpdateQuantity(item.id, item.quantity, -1)}
-                                className="btn btn-sm btn-light border fw-bold" 
-                                style={{ width: '30px', height: '30px', borderRadius: '8px' }}
-                              >-</button>
-                              <span className="fw-bold" style={{ width: '30px', textAlign: 'center' }}>{item.quantity}</span>
-                              <button 
-                                onClick={() => handleUpdateQuantity(item.id, item.quantity, 1)}
-                                className="btn btn-sm btn-light border fw-bold" 
-                                style={{ width: '30px', height: '30px', borderRadius: '8px' }}
-                              >+</button>
-                            </div>
-                          </td>
-                          <td className="py-3 text-end fw-bold" style={{ color: '#6C63FF' }}>₱{(item.product.price * item.quantity).toFixed(2)}</td>
-                          <td className="py-3 text-end">
-                            <button 
-                                onClick={() => handleRemove(item.id)}
-                                className="btn btn-sm text-danger"
-                            >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="5" className="text-center py-5 text-muted">Your cart is currently empty.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================
+          FOREGROUND DIALOG: PROCESS PAYMENT
+      ============================================= */}
+      {showPaymentModal && (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1050 }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '15px', overflow: 'hidden' }}>
+              <div className="modal-header border-0 text-white" style={{ backgroundColor: '#7978E9' }}>
+                <h5 className="modal-title fw-bold">Process Payment</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowPaymentModal(false)}></button>
+              </div>
+              <div className="modal-body p-4">
+                <form onSubmit={submitPayment}>
+                  <div className="mb-4 text-center">
+                    <h6 className="text-muted fw-bold mb-1">Total Amount Due</h6>
+                    <h2 className="fw-bold m-0" style={{ color: '#6C63FF' }}>₱{numericTotal.toFixed(2)}</h2>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label fw-bold" style={{ color: '#1E1E1E' }}>Cash Received</label>
+                    <div className="input-group input-group-lg">
+                      <span className="input-group-text bg-light border-end-0 fw-bold text-muted">₱</span>
+                      <input 
+                        type="number" 
+                        className="form-control bg-light border-start-0 fw-bold" 
+                        placeholder="0.00"
+                        step="0.01"
+                        min={numericTotal}
+                        required
+                        value={data.cash_received}
+                        onChange={(e) => setData('cash_received', e.target.value)}
+                      />
+                    </div>
+                    {errors.cash_received && <div className="text-danger mt-2 small fw-bold">{errors.cash_received}</div>}
+                  </div>
+                  <div className="mb-4">
+                    <label className="form-label fw-bold" style={{ color: '#1E1E1E' }}>Change</label>
+                    <div className="input-group input-group-lg">
+                      <span className="input-group-text bg-light border-end-0 fw-bold text-muted">₱</span>
+                      <input type="text" className="form-control bg-light border-start-0 fw-bold text-success" value={changeAmount} readOnly />
+                    </div>
+                  </div>
+                  <div className="d-flex justify-content-end gap-2">
+                    <button type="button" className="btn btn-light fw-bold" onClick={() => setShowPaymentModal(false)} style={{ borderRadius: '10px' }}>Cancel</button>
+                    <button type="submit" className="btn fw-bold text-white px-4" style={{ backgroundColor: '#6C63FF', borderRadius: '10px' }} disabled={processing || !isPaymentValid}>
+                      {processing ? 'Processing...' : 'Confirm Payment'}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Right Side: Order Summary */}
-        <div className="col-12 col-xl-4">
-          <div className="card border-0 shadow-sm" style={{ borderRadius: '15px', backgroundColor: '#F5F4FF' }}>
-            <div className="card-body p-4 d-flex flex-column h-100">
-              <h5 className="fw-bold mb-4" style={{ color: '#1E1E1E' }}>Order Summary</h5>
-              
-              <div className="d-flex justify-content-between mb-3">
-                <span className="text-muted fw-semibold">Items ({cart_items?.length || 0})</span>
-                <span className="fw-bold">₱{total_price ? parseFloat(total_price).toFixed(2) : '0.00'}</span>
-              </div>
-              
-              <div className="d-flex justify-content-between mb-4">
-                <span className="text-muted fw-semibold">Tax (VAT Included)</span>
-                <span className="fw-bold">₱0.00</span>
-              </div>
-
-              <hr style={{ borderColor: '#dee2e6' }} />
-
-              <div className="d-flex justify-content-between align-items-center my-4">
-                <span className="fw-bold fs-5" style={{ color: '#1E1E1E' }}>Total</span>
-                <span className="fw-bold fs-3" style={{ color: '#7978E9' }}>₱{total_price ? parseFloat(total_price).toFixed(2) : '0.00'}</span>
-              </div>
-
-              {/* Action Button */}
-              <Link 
-                href={route('customer.checkout')} 
-                className={`btn w-100 fw-bold text-white py-3 mt-auto ${!cart_items?.length ? 'disabled' : ''}`}
-                style={{ backgroundColor: '#6C63FF', borderRadius: '10px', fontSize: '1.1rem' }}
-              >
-                Proceed to Payment
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
+      
     </div>
   );
 }
