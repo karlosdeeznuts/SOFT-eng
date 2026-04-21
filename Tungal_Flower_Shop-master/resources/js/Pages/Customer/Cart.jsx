@@ -1,168 +1,155 @@
-import React from 'react'
-import CustomerLayout from '../../Layout/CustomerLayout'
-import { Link, useForm } from '@inertiajs/react'
-import { FaTrash } from "react-icons/fa6";
-import { BsCartFill } from "react-icons/bs";
-import { useRoute } from '../../../../vendor/tightenco/ziggy';
+import React from 'react';
+import { Head, Link, router } from '@inertiajs/react';
+import CustomerLayout from '../../Layout/CustomerLayout';
 
-function Cart({ carts, total }) {
-    console.log(carts);
-    console.log(total);
-
-    const route = useRoute();
-
-    const { data, setData, post, processing, reset } = useForm({
-        cart_id: carts.data.map(cart => cart.id),
-        total: total,
-        cash_received: '0',
-    });
-
-    function submit(e) {
-        e.preventDefault();
-        post(route('customer.checkout'), {
-            onSuccess() {
-                reset();
-            }
-        });
-    }
-
-    return (
-        <div>
-            <form onSubmit={submit}>
-                <div className="d-flex justify-content-center gap-2">
-                    <div className="col-md-8">
-                        <div className="card shadow-sm rounded">
-                            <div className="card-header bg-success text-light d-flex justify-content-between align-items-center">
-                                <h4>Cart</h4>
-                                <h4>{carts.total} Items</h4>
-                            </div>
-                            <div className="card-body">
-                                <table class="table">
-                                    <thead className='text-center'>
-                                        <tr>
-                                            <th></th>
-                                            <th className='text-start'>Product</th>
-                                            <th>Price</th>
-                                            <th>Quantity</th>
-                                            <th>Subtotal</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className='text-center'>
-                                        {carts.data.length > 0 ? (
-                                            carts.data.map((cart) => (
-                                                <tr className='align-middle' key={cart.id}>
-                                                    <td>
-                                                        <input className="form-check-input shadow-sm" type="checkbox" value={cart.id} />
-                                                    </td>
-                                                    <td className='text-start d-flex align-items-center gap-2'>
-                                                        <img
-                                                            src={`/storage/${cart.product.image}`}
-                                                            alt="image"
-                                                            className="object-fit-contain"
-                                                            style={{ width: '50px', height: '50px' }}
-                                                        />
-                                                        <p>{cart.product.product_name}</p>
-                                                    </td>
-                                                    <td>₱{cart.product.price}</td>
-                                                    <td>{cart.quantity}</td>
-                                                    <td>₱{cart.subtotal}</td>
-                                                    <td>
-
-                                                        <Link
-                                                            href={route('customer.removeItem', { cart_id: cart.id })}
-                                                            className='btn btn-outline-danger btn-sm d-flex justify-content-center align-items-center gap-1'
-                                                        >
-                                                            <FaTrash /> Delete
-                                                        </Link>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan="6" className="text-center text-muted">
-                                                    No products in the cart.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-
-                                </table>
-                            </div>
-                            <div className="card-footer d-flex justify-content-between align-items-center bg-light p-3">
-                                <p>{carts.to} out of {carts.total} Products</p>
-
-                                <div>
-                                    {
-                                        carts.links.map((link) => (
-                                            link.url ?
-                                                <Link
-                                                    key={link.label}
-                                                    href={link.url}
-                                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                                    className={`btn btn-sm me-3 ${link.active ? 'btn-success' : 'btn-outline-success'}`}
-                                                    style={{ textDecoration: 'none' }}
-                                                    preserveScroll
-                                                />
-
-                                                :
-                                                <span
-                                                    key={link.label}
-                                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                                    className='me-3 text-muted'
-                                                >
-
-                                                </span>
-                                        ))
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-md-4">
-                        <div className="card shadow-sm rounded">
-                            <div className="card-body">
-                                <h4 className='text-success mb-3'>Order Summary</h4>
-                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <p className='fw-bold'>Items</p>
-                                    <p>{carts.total} Items</p>
-                                </div>
-                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <p className='fw-bold'>Total</p>
-                                    <p>₱{total}</p>
-                                </div>
-                                <hr />
-
-                                <div className="mb-4">
-                                    <label htmlFor="cash" className="form-label text-dark fw-bold mb-2">Cash received</label>
-                                    <input
-                                        type="number"
-                                        className="form-control shadow-sm"
-                                        id='cash'
-                                        min='0'
-                                        value={data.cash_received}
-                                        onChange={(e) => setData('cash_received', e.target.value)}
-                                    />
-                                </div>
-
-                                <div className="d-flex justify-content-between align-items-center mb-4">
-                                    <p className='fw-bold'>Change</p>
-                                    <p>₱{data.cash_received - total}</p>
-                                </div>
-
-                                <button
-                                    type='submit'
-                                    className='btn btn-success w-100 shadow d-flex justify-content-center align-items-center gap-2'
-                                    disabled={processing}
-                                ><BsCartFill /> Checkout</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </form >
-        </div >
-    )
+function BackIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
 }
 
-Cart.layout = page => <CustomerLayout children={page} />
-export default Cart
+function Cart({ cart_items, total_price }) {
+
+  // Handlers to trigger your existing Controller routes
+  const handleUpdateQuantity = (cartId, currentQuantity, change) => {
+    const newQuantity = currentQuantity + change;
+    if (newQuantity < 1) return; // Prevent 0 quantity
+    router.post(route('customer.updateCartQuantity'), { cart_id: cartId, quantity: newQuantity }, { preserveScroll: true });
+  };
+
+  const handleRemove = (cartId) => {
+    router.post(route('customer.removeFromCart'), { cart_id: cartId }, { preserveScroll: true });
+  };
+
+  return (
+    <div className="container-fluid py-5 px-4">
+      <Head title="Sales Order" />
+
+      {/* Header */}
+      <div className="d-flex align-items-center gap-3 mb-5 mt-3">
+        <Link 
+            href={route('customer.product')} 
+            className="btn btn-light shadow-sm d-flex align-items-center justify-content-center"
+            style={{ width: '56px', height: '56px', borderRadius: '10px', border: '1px solid #dee2e6' }}
+        >
+          <BackIcon />
+        </Link>
+        <h1 className="fw-bold m-0" style={{ color: '#1E1E1E', fontSize: '2.5rem' }}>Sales Order</h1>
+      </div>
+
+      <div className="row g-4">
+        {/* Left Side: Item List */}
+        <div className="col-12 col-xl-8">
+          <div className="card border-0 shadow-sm" style={{ borderRadius: '15px' }}>
+            <div className="card-header bg-white border-0 pt-4 pb-0 px-4">
+              <h5 className="fw-bold" style={{ color: '#7978E9' }}>Order Details</h5>
+            </div>
+            <div className="card-body p-4">
+              <div className="table-responsive">
+                <table className="table align-middle">
+                  <thead className="text-muted" style={{ fontSize: '0.85rem', textTransform: 'uppercase' }}>
+                    <tr>
+                      <th scope="col" className="border-0 pb-3">Product</th>
+                      <th scope="col" className="border-0 pb-3">Price</th>
+                      <th scope="col" className="border-0 pb-3 text-center">Quantity</th>
+                      <th scope="col" className="border-0 pb-3 text-end">Total</th>
+                      <th scope="col" className="border-0 pb-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart_items?.length > 0 ? (
+                      cart_items.map((item) => (
+                        <tr key={item.id} style={{ borderBottom: '1px solid #f8f9fa' }}>
+                          <td className="py-3">
+                            <div className="d-flex align-items-center gap-3">
+                              <img 
+                                src={`/storage/${item.product.image}`} 
+                                alt={item.product.product_name} 
+                                className="object-fit-cover rounded" 
+                                style={{ width: '60px', height: '60px', border: '1px solid #dee2e6' }} 
+                              />
+                              <span className="fw-bold text-dark">{item.product.product_name}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 fw-semibold text-muted">₱{item.product.price}</td>
+                          <td className="py-3">
+                            <div className="d-flex align-items-center justify-content-center gap-2">
+                              <button 
+                                onClick={() => handleUpdateQuantity(item.id, item.quantity, -1)}
+                                className="btn btn-sm btn-light border fw-bold" 
+                                style={{ width: '30px', height: '30px', borderRadius: '8px' }}
+                              >-</button>
+                              <span className="fw-bold" style={{ width: '30px', textAlign: 'center' }}>{item.quantity}</span>
+                              <button 
+                                onClick={() => handleUpdateQuantity(item.id, item.quantity, 1)}
+                                className="btn btn-sm btn-light border fw-bold" 
+                                style={{ width: '30px', height: '30px', borderRadius: '8px' }}
+                              >+</button>
+                            </div>
+                          </td>
+                          <td className="py-3 text-end fw-bold" style={{ color: '#6C63FF' }}>₱{(item.product.price * item.quantity).toFixed(2)}</td>
+                          <td className="py-3 text-end">
+                            <button 
+                                onClick={() => handleRemove(item.id)}
+                                className="btn btn-sm text-danger"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="text-center py-5 text-muted">Your cart is currently empty.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Order Summary */}
+        <div className="col-12 col-xl-4">
+          <div className="card border-0 shadow-sm" style={{ borderRadius: '15px', backgroundColor: '#F5F4FF' }}>
+            <div className="card-body p-4 d-flex flex-column h-100">
+              <h5 className="fw-bold mb-4" style={{ color: '#1E1E1E' }}>Order Summary</h5>
+              
+              <div className="d-flex justify-content-between mb-3">
+                <span className="text-muted fw-semibold">Items ({cart_items?.length || 0})</span>
+                <span className="fw-bold">₱{total_price ? parseFloat(total_price).toFixed(2) : '0.00'}</span>
+              </div>
+              
+              <div className="d-flex justify-content-between mb-4">
+                <span className="text-muted fw-semibold">Tax (VAT Included)</span>
+                <span className="fw-bold">₱0.00</span>
+              </div>
+
+              <hr style={{ borderColor: '#dee2e6' }} />
+
+              <div className="d-flex justify-content-between align-items-center my-4">
+                <span className="fw-bold fs-5" style={{ color: '#1E1E1E' }}>Total</span>
+                <span className="fw-bold fs-3" style={{ color: '#7978E9' }}>₱{total_price ? parseFloat(total_price).toFixed(2) : '0.00'}</span>
+              </div>
+
+              {/* Action Button */}
+              <Link 
+                href={route('customer.checkout')} 
+                className={`btn w-100 fw-bold text-white py-3 mt-auto ${!cart_items?.length ? 'disabled' : ''}`}
+                style={{ backgroundColor: '#6C63FF', borderRadius: '10px', fontSize: '1.1rem' }}
+              >
+                Proceed to Payment
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Cart.layout = page => <CustomerLayout children={page} />;
+export default Cart;
