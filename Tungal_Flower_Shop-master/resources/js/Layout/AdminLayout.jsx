@@ -2,170 +2,125 @@ import React from 'react'
 import logo from '../../../public/assets/images/logo.png'
 import profile from '../../../public/assets/images/profile.png'
 import { Link, usePage } from '@inertiajs/react'
-import { BsFillGridFill, BsBagFill, BsCartFill, BsClipboard2CheckFill } from "react-icons/bs";
+import { BsFillGridFill, BsBoxSeam, BsFileText, BsTruck, BsArrowReturnLeft, BsCashStack, BsPersonCheck } from "react-icons/bs";
 import { IoExit, IoPeople } from "react-icons/io5";
-import { FaBars, FaUserLarge, FaCubes, FaCoins } from "react-icons/fa6";
+import { FaBars } from "react-icons/fa6";
 import { useRoute } from '../../../vendor/tightenco/ziggy'
 import MetaTagsLayout from './MetaTagsLayout';
 
-
 export default function AdminLayout({ children }) {
     const route = useRoute();
-
-    // Get the authenticated user credentials
     const { auth } = usePage().props
 
-    return (
+    const activeLinkStyle = { backgroundColor: '#6d78e3', color: 'white', fontWeight: 'bold' };
+    const inactiveLinkStyle = { color: '#6c757d' };
 
+    return (
         <>
             <MetaTagsLayout />
+            <style>
+                {`
+                    .desktop-sidebar { width: 250px; position: fixed; height: 100vh; overflow-y: auto; }
+                    .main-content { margin-left: 250px; min-height: 100vh; }
+                    .sidebar-item-custom:hover { background-color: #f1f3f5; color: #000 !important; }
+                    @media (max-width: 768px) {
+                        .desktop-sidebar { display: none !important; }
+                        .main-content { margin-left: 0; }
+                    }
+                `}
+            </style>
 
-            <div className="d-flex vh-100 bg-light">
-                {/* Sidebar (Fixed, Non-Scrollable) */}
-                <div className="bg-light shadow p-3 sidebar" style={{ width: '20%', height: '100vh', position: 'fixed' }}>
-                    <div className="d-flex align-items-center gap-2 mb-4">
-                        <div className="text-center">
-                            <img src={logo} alt="logo" className="object-fit-cover" style={{ width: '50px', height: '50px' }} />
-                        </div>
+            <div className="d-flex bg-light w-100" style={{ minHeight: '100vh' }}>
+                
+                {/* Desktop Sidebar */}
+                <div className="bg-white shadow-sm p-4 d-flex flex-column align-items-center desktop-sidebar">
+                    <h6 className='fw-bold mb-5 mt-2 text-center text-dark' style={{ letterSpacing: '0.5px' }}>TUNGAL'S FLOWER SHOP</h6>
 
-                        <h5 className='text-success'>Tungal's <br />Flower Shop</h5>
-                    </div>
-
-
-                    <nav className="d-flex flex-column gap-1">
-                        <Link
-                            href={route('admin.dashboard')}
-                            className={`d-flex align-items-center gap-2 rounded p-2 sidebar-item ${route().current('admin.dashboard') ? 'active' : ''}`}
-                        >
-                            <BsFillGridFill /> Dashboard
+                    <nav className="w-100 d-flex flex-column gap-2 mb-auto">
+                        <Link href={route('admin.dashboard')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.dashboard') ? activeLinkStyle : inactiveLinkStyle}>
+                            <BsFillGridFill className="fs-5" /> Dashboard
                         </Link>
-
-
-                        <Link
-                            href={route('admin.sales')}
-                            className={`d-flex align-items-center gap-2 rounded p-2 sidebar-item ${route().current('admin.sales') ||
-                                route().current('admin.invoice') ||
-                                route().current('admin.selectedEmployee') ? 'active' : ''}`}
-                        >
-                            <FaCoins /> Sales
+                        <Link href={route('admin.inventory')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.inventory') ? activeLinkStyle : inactiveLinkStyle}>
+                            <BsBoxSeam className="fs-5" /> Inventory
                         </Link>
-
-                        <Link
-                            href={route('admin.inventory')}
-                            className={`d-flex align-items-center gap-2 rounded p-2 sidebar-item ${route().current('admin.inventory') ||
-                                route().current('inventory.viewProduct') ||
-                                route().current('inventory.addProduct') ? 'active' : ''}`}
-                        >
-                            <FaCubes /> Inventory
+                        <Link href={route('admin.report')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.report') ? activeLinkStyle : inactiveLinkStyle}>
+                            <BsFileText className="fs-5" /> Report
                         </Link>
-
-                        <Link
-                            href={route('admin.employee')}
-                            className={`d-flex align-items-center gap-2 rounded p-2 sidebar-item ${route().current('admin.employee') ||
-                                route().current('employee.viewProfile') ||
-                                route().current('employee.addEmployee') ? 'active' : ''}`}
-                        >
-                            <IoPeople /> Employee
+                        <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
+                            <BsTruck className="fs-5" /> Supplier
                         </Link>
-
-                        <Link
-                            href={route('admin.profile')}
-                            className={`d-flex align-items-center gap-2 rounded p-2 sidebar-item ${route().current('admin.profile') ? 'active' : ''}`}
-                        >
-                            <FaUserLarge /> Profile
+                        <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
+                            <BsArrowReturnLeft className="fs-5" /> Returns
+                        </Link>
+                        <Link href={route('admin.employee')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.employee') ? activeLinkStyle : inactiveLinkStyle}>
+                            <IoPeople className="fs-5" /> Employee
+                        </Link>
+                        <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
+                            <BsCashStack className="fs-5" /> Pay
+                        </Link>
+                        <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
+                            <BsPersonCheck className="fs-5" /> Approvals
                         </Link>
                     </nav>
 
-                    <div style={{ marginTop: '285px' }}>
-                        <Link
-                            href={route('customer.index')}
-                            className={`d-flex align-items-center gap-2 rounded p-2 sidebar-item ${route().current('admin.index') ? 'active' : ''}`}
-                        >
-                            <IoExit /> Logout
+                    <div className="d-flex flex-column align-items-center w-100 mt-4">
+                        <img src={auth.user ? `/storage/${auth.user.profile}` : profile} alt="profile" className="rounded-circle mb-3 border" style={{ width: '90px', height: '90px', objectFit: 'cover' }} />
+                        <h6 className="fw-bold text-dark text-center mb-4">{auth.user ? `${auth.user.firstname} ${auth.user.lastname}` : 'Juan Dela Cruz'}</h6>
+                        <Link href={route('customer.index')} className="btn w-100 text-white fw-bold d-flex align-items-center justify-content-center gap-2 py-2" style={{ backgroundColor: '#de5b62', borderRadius: '8px' }}>
+                            <IoExit className="fs-5" /> Log Out
                         </Link>
                     </div>
-
                 </div>
 
-                {/* Content Area (Scrollable) */}
-                <div className="bg-light content">
-                    <nav className="d-flex justify-content-between align-items-center bg-success text-light px-3 py-2 sticky-top">
+                {/* Main Content Area */}
+                <div className="bg-light main-content w-100">
+                    
+                    {/* Mobile Top Navbar (Hidden on Desktop) */}
+                    <nav className="d-flex justify-content-between align-items-center bg-white shadow-sm px-3 py-3 d-md-none sticky-top">
                         <div className="d-flex align-items-center gap-3">
-                            <button className="btn btn-light humburger-hidden" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample"><FaBars /></button>
-
-                            <img src={auth.user ? `/storage/${auth.user.profile}` : profile} alt="profile" className="object-fit-cover rounded-circle border border-2 border-light shadow-lg" style={{ width: '45px', height: '45px' }} />
-                            <h5 className="text-light"><span className="text-warning">Hi!</span> {auth.user ? `${auth.user.firstname} ${auth.user.lastname}` : 'Guest'}</h5>
+                            <button className="btn btn-light" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample"><FaBars /></button>
                         </div>
+                        <h6 className="mb-0 fw-bold">TUNGAL'S FLOWER SHOP</h6>
                     </nav>
 
                     {/* Dynamic Content Section */}
-                    <section className="p-3">
+                    <section className="p-4" style={{ backgroundColor: '#f5f6fa', minHeight: '100vh' }}>
                         {children}
                     </section>
                 </div>
 
-
-                {/* Offcanvas */}
-                <div className="offcanvas offcanvas-start" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel" style={{ width: '300px' }}>
-                    <div class="offcanvas-header d-flex align-items-center bg-light">
-                        <div className="d-flex align-items-center gap-2">
-                            <img src={logo} alt="logo" className="object-fit-cover" style={{ width: '50px', height: '50px' }} />
-
-                            <h5 className="offcanvas-title text-success" id="offcanvasExampleLabel">EverBloom</h5>
-                        </div>
-
-
-                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                {/* Mobile Offcanvas Sidebar */}
+                <div className="offcanvas offcanvas-start" tabIndex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel" style={{ width: '280px' }}>
+                    <div className="offcanvas-header d-flex align-items-center bg-white border-bottom">
+                        <h6 className="offcanvas-title fw-bold text-dark" id="offcanvasExampleLabel">TUNGAL'S FLOWER SHOP</h6>
+                        <button type="button" className="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                     </div>
-                    <div class="offcanvas-body d-flex flex-column gap-1 bg-light">
-                        <nav className="d-flex flex-column gap-1">
-                            <Link
-                                href={route('admin.dashboard')}
-                                className={`d-flex align-items-center gap-2 rounded p-2 sidebar-item ${route().current('admin.dashboard') ? 'active' : ''}`}
-                            >
+                    <div className="offcanvas-body d-flex flex-column bg-white">
+                        <nav className="d-flex flex-column gap-2 mb-auto">
+                            <Link href={route('admin.dashboard')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.dashboard') ? activeLinkStyle : inactiveLinkStyle}>
                                 <BsFillGridFill /> Dashboard
                             </Link>
-
-                            <Link
-                                href={route('admin.sales')}
-                                className={`d-flex align-items-center gap-2 rounded p-2 sidebar-item ${route().current('admin.sales') ? 'active' : ''}`}
-                            >
-                                <FaCoins /> Sales
+                            <Link href={route('admin.inventory')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.inventory') ? activeLinkStyle : inactiveLinkStyle}>
+                                <BsBoxSeam /> Inventory
                             </Link>
-
-                            <Link
-                                href={route('admin.inventory')}
-                                className={`d-flex align-items-center gap-2 rounded p-2 sidebar-item ${route().current('admin.inventory') ? 'active' : ''}`}
-                            >
-                                <FaCubes /> Inventory
+                            <Link href={route('admin.report')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.report') ? activeLinkStyle : inactiveLinkStyle}>
+                                <BsFileText /> Report
                             </Link>
-
-                            <Link
-                                href={route('admin.employee')}
-                                className={`d-flex align-items-center gap-2 rounded p-2 sidebar-item ${route().current('admin.employee') ? 'active' : ''}`}
-                            >
+                            <Link href={route('admin.employee')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.employee') ? activeLinkStyle : inactiveLinkStyle}>
                                 <IoPeople /> Employee
-                            </Link>
-
-                            <Link
-                                href={route('admin.profile')}
-                                className={`d-flex align-items-center gap-2 rounded p-2 sidebar-item ${route().current('admin.profile') ? 'active' : ''}`}
-                            >
-                                <FaUserLarge /> Profile
                             </Link>
                         </nav>
 
-                        <div style={{ marginTop: '235px' }}>
-                            <Link
-                                href={route('customer.index')}
-                                className={`d-flex align-items-center gap-2 rounded p-2 sidebar-item ${route().current('admin.index') ? 'active' : ''}`}
-                            >
-                                <IoExit /> Logout
+                        <div className="mt-4 pt-4 border-top d-flex flex-column align-items-center">
+                            <img src={auth.user ? `/storage/${auth.user.profile}` : profile} alt="profile" className="rounded-circle mb-2" style={{ width: '60px', height: '60px', objectFit: 'cover' }} />
+                            <span className="fw-bold mb-3">{auth.user ? `${auth.user.firstname} ${auth.user.lastname}` : 'Guest'}</span>
+                            <Link href={route('customer.index')} className="btn w-100 text-white fw-bold d-flex align-items-center justify-content-center gap-2" style={{ backgroundColor: '#de5b62', borderRadius: '8px' }}>
+                                <IoExit /> Log Out
                             </Link>
                         </div>
                     </div>
                 </div>
-            </div >
+            </div>
         </>
     )
 }
