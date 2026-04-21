@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../Layout/AdminLayout';
 import { Head, Link } from '@inertiajs/react';
 import profilePlaceholder from '../../../../public/assets/images/profile.png';
+import AddEmployee from './Employee_Features/AddEmployee'; // <-- THIS IMPORT IS CRITICAL
 
 const UserIconFilled = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -26,8 +27,9 @@ const ArrowRight = () => (
 function Employee({ employees }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    
     const ITEMS_PER_PAGE = 4;
-
     const employeeList = employees?.data ? employees.data : employees || [];
 
     // Filter by search query
@@ -67,13 +69,13 @@ function Employee({ employees }) {
                         />
                     </div>
 
-                    <Link
-                        href={route('employee.addEmployee')}
+                    <button
+                        onClick={() => setIsAddModalOpen(true)}
                         className="btn d-flex align-items-center gap-2 fw-semibold text-white px-4 rounded-4 shadow-sm border-0"
                         style={{ backgroundColor: '#7859FF', height: '48px', fontSize: '15px' }}
                     >
                         <UserIconFilled /> Add Employee
-                    </Link>
+                    </button>
                 </div>
             </div>
 
@@ -81,7 +83,6 @@ function Employee({ employees }) {
             <div className="row row-cols-1 row-cols-md-2 g-5 mb-5">
                 {displayedEmployees.length > 0 ? (
                     displayedEmployees.map((employee, index) => {
-                        // Calculate the continuous global index for display (e.g., 01, 02, 05, etc.)
                         const displayIndex = startIndex + index + 1;
                         
                         return (
@@ -89,7 +90,6 @@ function Employee({ employees }) {
                                 <div className="card shadow-sm border-0 h-100" style={{ borderRadius: '16px' }}>
                                     <div className="card-body p-4 d-flex align-items-center gap-4">
                                         
-                                        {/* Avatar Box */}
                                         <div 
                                             className="rounded-4 d-flex justify-content-center align-items-center overflow-hidden flex-shrink-0" 
                                             style={{ width: '120px', height: '120px', backgroundColor: '#7B9DFA' }}
@@ -102,7 +102,6 @@ function Employee({ employees }) {
                                             />
                                         </div>
 
-                                        {/* Details */}
                                         <div className="d-flex flex-column justify-content-center w-100">
                                             <h4 className="fw-bold mb-2" style={{ color: '#7859FF' }}>
                                                 {employee.firstname} {employee.lastname}
@@ -187,6 +186,11 @@ function Employee({ employees }) {
                     </button>
                 </div>
             )}
+
+            <AddEmployee 
+                isOpen={isAddModalOpen} 
+                onClose={() => setIsAddModalOpen(false)} 
+            />
         </div>
     );
 }

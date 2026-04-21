@@ -50,9 +50,6 @@ Route::middleware(['auth',AdminMiddleware::class])->group(function () {
 
     // ----------------------------------------------------------------------------
     // Employee-Feature Routes
-    Route::get('/admin/employee/addEmployee', function () {
-        return inertia('Admin/Employee_Features/AddEmployee');
-    })->name('employee.addEmployee');
 
     Route::post('/admin/employee/addEmployee/store',[UserController::class,'storeEmployeeData'])->name('employee.storeEmployeeData');
 
