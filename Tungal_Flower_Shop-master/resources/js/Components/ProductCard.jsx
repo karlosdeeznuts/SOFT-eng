@@ -1,20 +1,26 @@
 import React from 'react';
 
+// Swapped to a much more reliable stroke-based SVG that won't disappear in flexboxes
 const PurchaseTagIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12.586 2.586C12.211 2.2109 11.7024 2.00011 11.172 2H4C3.46957 2 2.96086 2.58579 2.58579C2.21071 2.96086 2 3.46957 2 4V11.172C2.00011 11.7024 2.2109 12.211 2.586 12.586L10.586 20.586C10.9611 20.9609 11.4697 21.1716 12 21.1716C12.5303 21.1716 13.0389 20.9609 13.414 20.586L20.586 13.414C20.9609 13.0389 21.1716 12.5303 21.1716 12C21.1716 11.4697 20.9609 10.9611 20.586 10.586L12.586 2.586ZM7 9C6.46943 8.99987 5.96065 8.78897 5.58558 8.41371C5.21051 8.03845 4.99987 7.52957 5 6.999C5.00013 6.46843 5.21103 5.95965 5.58629 5.58458C5.96155 5.20951 6.47043 4.99887 7.001 4.999C7.53157 4.99913 8.04035 5.21003 8.41542 5.58529C8.79049 5.96055 9.00113 6.46943 9.001 7C9.00087 7.53057 8.78997 8.03935 8.41471 8.41442C8.03945 8.78949 7.53057 9.00013 7 9Z" fill="currentColor"/>
+  <svg className="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+    <line x1="7" y1="7" x2="7.01" y2="7"></line>
   </svg>
 );
 
 export default function ProductCard({ id, name, price, stock, image, onBuyClick }) {
   return (
     <div className="card h-100 border-0" style={{ borderRadius: '1rem', overflow: 'hidden', boxShadow: '-2px 5px 50px 4px rgba(0,0,0,0.1)' }}>
+      
+      {/* Assuming the DB saves it as 'products/filename.jpg', this will work perfectly after running php artisan storage:link */}
       <img 
-        src={`/storage/${image}`} 
+        src={image ? `/storage/${image}` : '/assets/images/product.png'} 
         className="card-img-top object-fit-cover" 
         alt={name} 
-        style={{ height: '250px' }} 
+        style={{ height: '250px', backgroundColor: '#F4F5FA' }} 
+        onError={(e) => { e.target.src = '/assets/images/product.png'; }} // Fallback if image still fails
       />
+      
       <div className="card-body d-flex flex-column justify-content-between" style={{ backgroundColor: '#7978E9', color: 'white' }}>
         <h6 className="card-title fw-bold mb-3 text-truncate">{name}</h6>
         <div className="d-flex justify-content-between align-items-center">
@@ -25,11 +31,10 @@ export default function ProductCard({ id, name, price, stock, image, onBuyClick 
             </div>
           </div>
           
-          {/* Triggers the dialog box on the parent page */}
           <button 
             onClick={() => onBuyClick({ id, name, price, stock, image })}
             disabled={stock < 1}
-            className="btn d-flex align-items-center gap-2 fw-bold text-white"
+            className="btn d-flex align-items-center justify-content-center gap-2 fw-bold text-white px-3"
             style={{ backgroundColor: '#6C63FF', border: '1px solid black', borderRadius: '10px', height: '37px' }}
           >
             <PurchaseTagIcon /> Buy
