@@ -16,7 +16,7 @@ export default function AddProduct({ isOpen, onClose }) {
 
     // Wired up to match your existing Product DB, with placeholders for the new UI fields
     const { data, setData, post, processing, errors, reset } = useForm({
-        product_image: '',
+        image: '',
         product_name: '',
         type: 'Flower',          // Placeholder for future migration
         description: '',
@@ -27,7 +27,7 @@ export default function AddProduct({ isOpen, onClose }) {
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
-        setData('product_image', file); 
+        setData('image', file); 
         if (file) {
             setImagePreview(URL.createObjectURL(file)); 
         } else {
@@ -41,7 +41,7 @@ export default function AddProduct({ isOpen, onClose }) {
         post(route('inventory.storeProduct'), {
             onSuccess: () => {
                 reset();
-                setData('product_image', 'null');
+                setData('image', 'null');
                 setImagePreview(null);
                 onClose();
             }
@@ -112,7 +112,7 @@ export default function AddProduct({ isOpen, onClose }) {
                                 onChange={handleImageChange} 
                                 accept="image/png, image/jpeg, image/jpg" 
                             />
-                            {errors.product_image && <div className="text-danger mt-1" style={{ fontSize: '12px' }}>{errors.product_image}</div>}
+                            {errors.image && <div className="text-danger mt-1" style={{ fontSize: '12px' }}>{errors.image}</div>}
                         </div>
 
                         {/* TITLE */}
