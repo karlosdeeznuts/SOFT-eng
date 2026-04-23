@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../../Layout/AdminLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { useRoute } from '../../../../../vendor/tightenco/ziggy';
+import { Toaster, toast } from 'sonner';
 import profilePlaceholder from '../../../../../public/assets/images/profile.png';
 
 // Icons
@@ -46,7 +48,6 @@ const ArrowRight = () => (
 const AttendanceModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
-    // Placeholder state for Attendance form
     const [attendanceForm, setAttendanceForm] = useState({
         date: '2025-04-28',
         status: 'On-Time',
@@ -105,39 +106,48 @@ const AttendanceModal = ({ isOpen, onClose }) => {
     );
 };
 
-export default function ViewProfile({ user, employee }) {
-    const targetData = employee || user || {};
-    const [activeTab, setActiveTab] = useState('details'); // 'details' or 'attendance'
+// Notice we are correctly destructing user_info here now!
+export default function ViewProfile({ user_info }) {
+    const route = useRoute();
+    const targetData = user_info || {};
+    const [activeTab, setActiveTab] = useState('details'); 
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Wired up Inertia form for the editable fields
-    // Using fallbacks ('') for any fields that might not exist in your DB yet
-    const { data, setData, put, processing, errors } = useForm({
+    // Wired up Inertia form matching your UserController requirements
+    const { data, setData, post, processing, errors } = useForm({
+        id: targetData.id || '', // Include ID for the backend update query
         firstname: targetData.firstname || '',
         lastname: targetData.lastname || '',
-        address: targetData.address || '',
+        address: targetData.address || '', 
         contact_number: targetData.contact_number || '',
         username: targetData.username || '',
         role: targetData.role || 'Employee',
     });
 
-    // Mock Attendance Data (Placeholder until you connect an Attendance Model)
+    const { flash } = usePage().props;
+
+    useEffect(() => {
+        if (flash?.success) toast.success(flash.success);
+        if (flash?.error) toast.error(flash.error);
+    }, [flash]);
+
+    // Submit handler matching your route
+    const handleSaveProfile = (e) => {
+        e.preventDefault();
+        post(route('employee.updateUserInfo'));
+    };
+
+    // Mock Attendance Data 
     const attendanceData = [
         { id: '01', date: '05/08/2025', clockIn: '07:11 AM', clockOut: '06:30 PM', status: 'On-Time' },
         { id: '02', date: '05/09/2025', clockIn: '08:00 AM', clockOut: '07:22 PM', status: 'Late' },
         { id: '03', date: '05/13/2025', clockIn: '06:10 AM', clockOut: '05:10 PM', status: 'Overtime' },
     ];
 
-    const handleSaveProfile = (e) => {
-        e.preventDefault();
-        // Placeholder route: update this to your actual profile update route in web.php
-        // put(route('employee.updateProfile', targetData.id));
-        console.log("Saving data:", data);
-    };
-
     return (
         <div className="container-fluid py-5 px-5" style={{ minHeight: '100vh', backgroundColor: '#F4F5FA', fontFamily: "'Poppins', sans-serif" }}>
             <Head title="Employee Profile" />
+            <Toaster position="top-right" expand={true} richColors />
 
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -161,9 +171,9 @@ export default function ViewProfile({ user, employee }) {
                             <img src={targetData.profile ? `/storage/${targetData.profile}` : profilePlaceholder} alt="Profile" className="object-fit-cover w-100 h-100" />
                         </div>
                         <div>
-                            <h3 className="fw-bold mb-1 text-dark">{data.firstname || 'First'} {data.lastname || 'Last'}</h3>
+                            <h3 className="fw-bold mb-1 text-dark">{data.firstname} {data.lastname}</h3>
                             <div className="d-flex align-items-center gap-2" style={{ fontSize: '16px', color: '#7859FF' }}>
-                                <span className="fw-bold">01</span>
+                                <span className="fw-bold">{String(targetData.id).padStart(2, '0')}</span>
                                 <span>Employee | {data.role}</span>
                             </div>
                         </div>
@@ -203,58 +213,72 @@ export default function ViewProfile({ user, employee }) {
                                 
                                 <div className="d-flex align-items-center">
                                     <label className="fw-medium text-dark mb-0" style={{ width: '120px', fontSize: '14px' }}>First Name</label>
-                                    <input 
-                                        type="text" 
-                                        className={`form-control shadow-none ${errors.firstname ? 'is-invalid' : ''}`} 
-                                        value={data.firstname} 
-                                        onChange={(e) => setData('firstname', e.target.value)}
-                                        style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }} 
-                                    />
+                                    <div className="flex-grow-1">
+                                        <input 
+                                            type="text" 
+                                            className={`form-control shadow-none ${errors.firstname ? 'is-invalid' : ''}`} 
+                                            value={data.firstname} 
+                                            onChange={(e) => setData('firstname', e.target.value)}
+                                            style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }} 
+                                        />
+                                        {errors.firstname && <div className="invalid-feedback">{errors.firstname}</div>}
+                                    </div>
                                 </div>
 
                                 <div className="d-flex align-items-center">
                                     <label className="fw-medium text-dark mb-0" style={{ width: '120px', fontSize: '14px' }}>Last Name</label>
-                                    <input 
-                                        type="text" 
-                                        className={`form-control shadow-none ${errors.lastname ? 'is-invalid' : ''}`} 
-                                        value={data.lastname} 
-                                        onChange={(e) => setData('lastname', e.target.value)}
-                                        style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }} 
-                                    />
+                                    <div className="flex-grow-1">
+                                        <input 
+                                            type="text" 
+                                            className={`form-control shadow-none ${errors.lastname ? 'is-invalid' : ''}`} 
+                                            value={data.lastname} 
+                                            onChange={(e) => setData('lastname', e.target.value)}
+                                            style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }} 
+                                        />
+                                        {errors.lastname && <div className="invalid-feedback">{errors.lastname}</div>}
+                                    </div>
                                 </div>
 
                                 <div className="d-flex align-items-center">
                                     <label className="fw-medium text-dark mb-0" style={{ width: '120px', fontSize: '14px' }}>Address</label>
-                                    <input 
-                                        type="text" 
-                                        className={`form-control shadow-none ${errors.address ? 'is-invalid' : ''}`} 
-                                        value={data.address} 
-                                        onChange={(e) => setData('address', e.target.value)}
-                                        style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }} 
-                                        placeholder="Enter address"
-                                    />
+                                    <div className="flex-grow-1">
+                                        <input 
+                                            type="text" 
+                                            className="form-control shadow-none" 
+                                            value={data.address} 
+                                            onChange={(e) => setData('address', e.target.value)}
+                                            style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }} 
+                                            placeholder="Enter address"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="d-flex align-items-center">
                                     <label className="fw-medium text-dark mb-0" style={{ width: '120px', fontSize: '14px' }}>Contact #</label>
-                                    <input 
-                                        type="text" 
-                                        className={`form-control shadow-none ${errors.contact_number ? 'is-invalid' : ''}`} 
-                                        value={data.contact_number} 
-                                        onChange={(e) => setData('contact_number', e.target.value)}
-                                        style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }} 
-                                    />
+                                    <div className="flex-grow-1">
+                                        <input 
+                                            type="text" 
+                                            className={`form-control shadow-none ${errors.contact_number ? 'is-invalid' : ''}`} 
+                                            value={data.contact_number} 
+                                            onChange={(e) => setData('contact_number', e.target.value)}
+                                            style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }} 
+                                        />
+                                        {errors.contact_number && <div className="invalid-feedback">{errors.contact_number}</div>}
+                                    </div>
                                 </div>
 
                                 <div className="d-flex align-items-center">
                                     <label className="fw-medium text-dark mb-0" style={{ width: '120px', fontSize: '14px' }}>UserName</label>
-                                    <input 
-                                        type="text" 
-                                        className={`form-control shadow-none ${errors.username ? 'is-invalid' : ''}`} 
-                                        value={data.username} 
-                                        onChange={(e) => setData('username', e.target.value)}
-                                        style={{ width: '200px', borderRadius: '8px', backgroundColor: '#F8F9FA' }} 
-                                    />
+                                    <div className="flex-grow-1">
+                                        <input 
+                                            type="text" 
+                                            className={`form-control shadow-none ${errors.username ? 'is-invalid' : ''}`} 
+                                            value={data.username} 
+                                            onChange={(e) => setData('username', e.target.value)}
+                                            style={{ width: '200px', borderRadius: '8px', backgroundColor: '#F8F9FA' }} 
+                                        />
+                                        {errors.username && <div className="invalid-feedback">{errors.username}</div>}
+                                    </div>
                                 </div>
                             </div>
 
@@ -262,7 +286,6 @@ export default function ViewProfile({ user, employee }) {
                                 <button type="button" className="btn d-flex align-items-center gap-2 fw-bold text-white px-4 border-0 shadow-sm" style={{ backgroundColor: '#DC3545', borderRadius: '8px', height: '42px' }}>
                                     <UserRemoveIcon /> Fire
                                 </button>
-                                {/* Added a Save button since the fields are editable */}
                                 <button type="submit" disabled={processing} className="btn d-flex align-items-center gap-2 fw-bold text-white px-4 border-0 shadow-sm" style={{ backgroundColor: '#0D6EFD', borderRadius: '8px', height: '42px' }}>
                                     <SaveIcon /> {processing ? 'Saving...' : 'Save Changes'}
                                 </button>
