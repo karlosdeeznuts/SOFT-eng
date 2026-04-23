@@ -36,7 +36,7 @@ class ProductController extends Controller
             ]);
 
             if($product){
-                return redirect()->route('inventory.addProduct')->with('success', $fields['product_name'] . ' data stored successfully.');
+                return redirect()->back()->with('success', 'Product added successfully!');
             }else{
                 return redirect()->back()->with('error','Failed to store the data.');
             }

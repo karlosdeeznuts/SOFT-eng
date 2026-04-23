@@ -95,7 +95,7 @@ class UserController extends Controller
             $user = User::create($fields);
 
             if($user){
-                return redirect()->route('employee.addEmployee')->with('success', $fields['firstname'] . ' data stored successfully.');
+                return redirect()->back()->with('success', 'Employee added successfully!');
             }else{
                 return redirect()->back()->with('error','Failed to store the data.');
             }
