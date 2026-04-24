@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import CustomerLayout from '../../Layout/CustomerLayout';
 import ProductCard from '../../Components/ProductCard';
+import { Toaster, toast } from 'sonner';
 
 function CartIcon() {
   return (
@@ -20,55 +21,62 @@ function RefundIcon() {
 }
 
 function Product({ products }) {
-  // Refund Modal State
-  const [refundStep, setRefundStep] = useState(0);
-  const [refundData, setRefundData] = useState({ orderId: '', reason: '', method: '' });
-
-  // Add-to-Cart Success Message State
+  // Add-to-Cart Modal State
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
-
-  // Sales Order (Add to Cart) Modal State
   const [selectedProduct, setSelectedProduct] = useState(null);
+  
   const { data, setData, post, processing, reset } = useForm({
     product_id: '',
     quantity: 1,
     type: 'Standard'
   });
 
+  // Refund Multi-Step State
+  const [refundStep, setRefundStep] = useState(0);
+  const [refundData, setRefundData] = useState({ invoiceNum: '', reason: '', method: '' });
+
+  // Add to Cart Handlers
   const handleOpenBuyModal = (product) => {
     setSelectedProduct(product);
     setData({ product_id: product.id, quantity: 1, type: 'Standard' });
   };
-
   const handleCloseBuyModal = () => {
     setSelectedProduct(null);
     reset();
   };
-
   const submitAddToCart = (e) => {
     e.preventDefault();
     post(route('customer.addToCart'), {
       preserveScroll: true,
-      // FIXED: On success, close modal, reset form, and show success banner on THIS page.
       onSuccess: () => {
         handleCloseBuyModal();
         setShowSuccessBanner(true);
-        // Automatically hide the banner after 3 seconds
         setTimeout(() => setShowSuccessBanner(false), 3000);
       }
     });
   };
 
+  // Refund Handlers
   const handleCloseRefund = () => {
     setRefundStep(0);
-    setRefundData({ orderId: '', reason: '', method: '' });
+    setRefundData({ invoiceNum: '', reason: '', method: '' });
+  };
+  const nextStep = () => setRefundStep(prev => prev + 1);
+  const prevStep = () => setRefundStep(prev => prev - 1);
+
+  const submitRefundRequest = (e) => {
+      e.preventDefault();
+      // Placeholder logic for backend
+      toast.success("Refund request confirmed and submitted successfully!");
+      handleCloseRefund();
   };
 
   return (
-    <div className="container-fluid py-5 px-4 position-relative">
+    <div className="container-fluid py-5 px-4 position-relative" style={{ backgroundColor: '#F4F5FA', minHeight: '100vh', fontFamily: "'Poppins', sans-serif" }}>
       <Head title="Products Dashboard" />
+      <Toaster position="top-right" richColors expand={true} />
 
-      {/* FIXED: Dynamic Success Banner */}
+      {/* Dynamic Success Banner */}
       {showSuccessBanner && (
         <div className="alert alert-success shadow-sm d-flex align-items-center mb-4" role="alert" style={{ backgroundColor: '#F5F4FF', border: '1px solid #dee2e6', borderRadius: '10px', color: '#1E1E1E' }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#28a745" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="me-2"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -84,12 +92,12 @@ function Product({ products }) {
           <button 
             onClick={() => setRefundStep(1)} 
             className="btn d-flex align-items-center gap-2 fw-bold text-white shadow-sm" 
-            style={{ backgroundColor: '#7DA0FA', border: '1px solid black', borderRadius: '10px', height: '56px' }}
+            style={{ backgroundColor: '#7DA0FA', border: '1px solid #7DA0FA', borderRadius: '10px', height: '52px', padding: '0 24px' }}
           >
             <RefundIcon /> Request Refund
           </button>
           
-          <Link href={route('customer.cart')} className="btn d-flex align-items-center gap-2 fw-bold text-white shadow-sm" style={{ backgroundColor: '#6C63FF', border: '1px solid black', borderRadius: '10px', height: '56px' }}>
+          <Link href={route('customer.cart')} className="btn d-flex align-items-center gap-2 fw-bold text-white shadow-sm" style={{ backgroundColor: '#6C63FF', border: '1px solid #6C63FF', borderRadius: '10px', height: '52px', padding: '0 24px' }}>
             <CartIcon /> Cart
           </Link>
         </div>
@@ -121,92 +129,177 @@ function Product({ products }) {
           MODAL: SALES ORDER (Add to Cart)
       ============================================= */}
       {selectedProduct && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }} tabIndex="-1">
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '15px', overflow: 'hidden' }}>
-              <div className="modal-header border-0 text-white" style={{ backgroundColor: '#7978E9' }}>
-                <h5 className="modal-title fw-bold">Sales Order</h5>
+        <div className="modal fade show d-block position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050 }}>
+          <div className="card shadow-lg border-0" style={{ borderRadius: '16px', width: '100%', maxWidth: '450px', backgroundColor: '#FFF' }}>
+            <div className="card-header border-0 text-white p-4" style={{ backgroundColor: '#7978E9', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
+              <h4 className="modal-title fw-bold m-0 d-flex justify-content-between align-items-center">
+                Sales Order
                 <button type="button" className="btn-close btn-close-white" onClick={handleCloseBuyModal}></button>
-              </div>
-              <div className="modal-body p-4">
-                <form onSubmit={submitAddToCart}>
-                  
-                  {/* Flower Readonly */}
-                  <div className="mb-3">
-                    <label className="form-label fw-bold" style={{ color: '#1E1E1E' }}>Flower</label>
-                    <input 
-                      type="text" 
-                      className="form-control bg-light" 
-                      value={selectedProduct.name} 
-                      disabled 
-                    />
-                  </div>
+              </h4>
+            </div>
+            <div className="card-body p-4">
+              <form onSubmit={submitAddToCart}>
+                
+                <div className="mb-3">
+                  <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Flower</label>
+                  <input type="text" className="form-control shadow-none bg-light" style={{ borderRadius: '8px' }} value={selectedProduct.name} disabled />
+                </div>
 
-                  {/* Type Dropdown */}
-                  <div className="mb-3">
-                    <label className="form-label fw-bold" style={{ color: '#1E1E1E' }}>Type</label>
-                    <select 
-                      className="form-select bg-light" 
-                      value={data.type}
-                      onChange={e => setData('type', e.target.value)}
-                    >
-                      <option value="Standard">Standard</option>
-                      <option value="Premium">Premium Bouquet</option>
-                      <option value="Custom">Custom Arrangement</option>
-                    </select>
-                  </div>
+                <div className="mb-3">
+                  <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Type</label>
+                  <select className="form-select shadow-none bg-light" style={{ borderRadius: '8px' }} value={data.type} onChange={e => setData('type', e.target.value)}>
+                    <option value="Standard">Standard</option>
+                    <option value="Premium">Premium Bouquet</option>
+                    <option value="Custom">Custom Arrangement</option>
+                  </select>
+                </div>
 
-                  {/* Quantity */}
-                  <div className="mb-3">
-                    <label className="form-label fw-bold" style={{ color: '#1E1E1E' }}>Quantity</label>
-                    <div className="input-group">
-                      <button 
-                        type="button"
-                        className="btn btn-outline-secondary fw-bold" 
-                        onClick={() => setData('quantity', Math.max(1, data.quantity - 1))}
-                      >-</button>
-                      <input 
-                        type="number" 
-                        className="form-control text-center" 
-                        value={data.quantity} 
-                        readOnly 
-                      />
-                      <button 
-                        type="button"
-                        className="btn btn-outline-secondary fw-bold" 
-                        onClick={() => setData('quantity', Math.min(selectedProduct.stock, data.quantity + 1))}
-                      >+</button>
-                    </div>
+                <div className="mb-3">
+                  <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Quantity</label>
+                  <div className="input-group">
+                    <button type="button" className="btn btn-outline-secondary fw-bold" onClick={() => setData('quantity', Math.max(1, data.quantity - 1))}>-</button>
+                    <input type="number" className="form-control text-center shadow-none" value={data.quantity} readOnly />
+                    <button type="button" className="btn btn-outline-secondary fw-bold" onClick={() => setData('quantity', Math.min(selectedProduct.stock, data.quantity + 1))}>+</button>
                   </div>
+                </div>
 
-                  {/* Price Calculation */}
-                  <div className="mb-4">
-                    <label className="form-label fw-bold" style={{ color: '#1E1E1E' }}>Total Price</label>
-                    <div className="fw-bold fs-4" style={{ color: '#6C63FF' }}>
-                      ₱{(selectedProduct.price * data.quantity).toFixed(2)}
-                    </div>
+                <div className="mb-4">
+                  <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Total Price</label>
+                  <div className="fw-bold fs-3" style={{ color: '#6C63FF' }}>
+                    ₱{(selectedProduct.price * data.quantity).toFixed(2)}
                   </div>
+                </div>
 
-                  <div className="d-flex justify-content-end gap-2">
-                    <button type="button" className="btn btn-light fw-bold" onClick={handleCloseBuyModal} style={{ borderRadius: '10px' }}>Cancel</button>
-                    <button 
-                      type="submit" 
-                      className="btn fw-bold text-white px-4" 
-                      style={{ backgroundColor: '#6C63FF', borderRadius: '10px' }} 
-                      disabled={processing}
-                    >
-                      {processing ? 'Adding...' : 'Add to Cart'}
-                    </button>
-                  </div>
-                </form>
-              </div>
+                <div className="d-flex justify-content-end gap-2 mt-4">
+                  <button type="button" className="btn btn-light fw-bold" onClick={handleCloseBuyModal} style={{ borderRadius: '8px' }}>Cancel</button>
+                  <button type="submit" className="btn fw-bold text-white px-4" style={{ backgroundColor: '#6C63FF', borderRadius: '8px' }} disabled={processing}>
+                    {processing ? 'Adding...' : 'Add to Cart'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL: REQUEST REFUND (Hidden, but exists) */}
-      {/* ... keeping the refund modal logic you already have ... */}
+      {/* =========================================
+          MODAL: MULTI-STEP REFUND REQUEST 
+      ============================================= */}
+      {refundStep > 0 && (
+        <div className="modal fade show d-block position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050 }}>
+          <div className="card shadow-lg border-0" style={{ borderRadius: '16px', width: '100%', maxWidth: '450px', backgroundColor: '#FFF' }}>
+            
+            {/* Header dynamically changes based on step */}
+            <div className="card-header border-0 text-white p-4" style={{ backgroundColor: '#7DA0FA', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
+              <h4 className="modal-title fw-bold m-0 d-flex justify-content-between align-items-center">
+                {refundStep === 1 || refundStep === 3 ? 'Request Refund' : 'Choose Refund Method'}
+                <button type="button" className="btn-close btn-close-white" onClick={handleCloseRefund}></button>
+              </h4>
+            </div>
+
+            <div className="card-body p-4 p-md-5">
+              
+              {/* STEP 1: REQUIRED DETAILS */}
+              {refundStep === 1 && (
+                <div>
+                  <p className="text-muted fw-medium mb-4" style={{ fontSize: '14px' }}>Please indicate the required details of your refund request.</p>
+                  
+                  <div className="mb-3">
+                    <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Invoice #</label>
+                    <input 
+                      type="text" 
+                      className="form-control shadow-none" 
+                      style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }}
+                      value={refundData.invoiceNum}
+                      onChange={e => setRefundData({...refundData, invoiceNum: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Reason</label>
+                    <textarea 
+                      className="form-control shadow-none" 
+                      rows="4" 
+                      style={{ borderRadius: '8px', backgroundColor: '#F8F9FA', resize: 'none' }}
+                      value={refundData.reason}
+                      onChange={e => setRefundData({...refundData, reason: e.target.value})}
+                    ></textarea>
+                  </div>
+
+                  <div className="d-flex justify-content-end gap-3 mt-4">
+                    <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={handleCloseRefund} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Cancel</button>
+                    <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={nextStep} disabled={!refundData.invoiceNum || !refundData.reason} style={{ backgroundColor: '#7DA0FA', borderRadius: '8px', width: '120px' }}>Next</button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2: REFUND METHOD */}
+              {refundStep === 2 && (
+                <div>
+                  <p className="text-muted fw-medium mb-4" style={{ fontSize: '14px' }}>How would you like to receive your refund?</p>
+                  
+                  <div className="mb-5">
+                    <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Refund Method</label>
+                    <select 
+                      className="form-select shadow-none" 
+                      style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }}
+                      value={refundData.method}
+                      onChange={e => setRefundData({...refundData, method: e.target.value})}
+                    >
+                      <option value="" disabled>Select a Method</option>
+                      <option value="Gcash">GCash</option>
+                      <option value="Bank">Bank Transfer</option>
+                      <option value="Cash">Cash (In-Store)</option>
+                    </select>
+                  </div>
+
+                  <div className="d-flex justify-content-end gap-3 mt-4">
+                    <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={prevStep} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Back</button>
+                    <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={nextStep} disabled={!refundData.method} style={{ backgroundColor: '#7DA0FA', borderRadius: '8px', width: '120px' }}>Next</button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 3: CONFIRMATION */}
+              {refundStep === 3 && (
+                <form onSubmit={submitRefundRequest}>
+                  <p className="text-muted fw-medium mb-4" style={{ fontSize: '14px' }}>Please confirm the details below.</p>
+                  
+                  <div className="d-flex flex-column gap-3 mb-5">
+                    <div className="d-flex flex-column">
+                      <span className="fw-bold text-dark" style={{ fontSize: '14px' }}>Invoice #</span>
+                      <div className="form-control shadow-none bg-light" style={{ borderRadius: '8px', border: '1px solid #EBEAEE' }}>
+                        {refundData.invoiceNum}
+                      </div>
+                    </div>
+
+                    <div className="d-flex flex-column">
+                      <span className="fw-bold text-dark" style={{ fontSize: '14px' }}>Refund Method</span>
+                      <div className="form-control shadow-none bg-light" style={{ borderRadius: '8px', border: '1px solid #EBEAEE' }}>
+                        {refundData.method}
+                      </div>
+                    </div>
+
+                    <div className="d-flex flex-column">
+                      <span className="fw-bold text-dark" style={{ fontSize: '14px' }}>Reason</span>
+                      <div className="form-control shadow-none bg-light p-2" style={{ borderRadius: '8px', border: '1px solid #EBEAEE', minHeight: '80px', wordBreak: 'break-word' }}>
+                        {refundData.reason}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="d-flex justify-content-end gap-3 mt-4">
+                    <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={prevStep} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Back</button>
+                    <button type="submit" className="btn fw-bold px-4 text-white shadow-none" style={{ backgroundColor: '#28A745', borderRadius: '8px', width: '120px' }}>Confirm</button>
+                  </div>
+                </form>
+              )}
+
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
