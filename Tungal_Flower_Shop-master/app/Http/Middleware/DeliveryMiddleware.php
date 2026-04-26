@@ -8,18 +8,16 @@ use Symfony\Component\HttpFoundation\Response;
 
 class DeliveryMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next): Response
     {
-        // Change 'role' to whatever column your users table uses to define the user type
-        if (auth()->check() && auth()->user()->role === 'delivery') {
-            return $next($request);
-        }
+        $user = $request->user();
 
-        abort(403, 'Unauthorized. Delivery personnel only.');
+        switch($user->role){
+            case 'Delivery':
+                return $next($request);
+                break;
+            default:
+                abort(403);
+        }
     }
 }

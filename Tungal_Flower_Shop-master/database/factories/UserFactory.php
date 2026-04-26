@@ -32,7 +32,7 @@ public function definition(): array
             'address'         => $this->faker->address,
             'hired_date'      => $this->faker->dateTimeBetween('-2 years', 'now')->format('Y-m-d'),
             'username'        => $this->faker->unique()->userName,
-            'password'        => \Illuminate\Support\Facades\Hash::make('password'), 
+            'password'        => \Illuminate\Support\Facades\Hash::make('!Password123'),
             'profile'         => 'profiles/' . $this->faker->uuid . '.jpg',
             'remember_token'  => \Illuminate\Support\Str::random(10),
             'created_at'      => $this->faker->dateTimeBetween('-6 months'),
