@@ -20,8 +20,8 @@ export default function CustomerLayout({ children }) {
   return (
     <div className="d-flex" style={{ height: '100vh', backgroundColor: '#F5F4FF', overflow: 'hidden', fontFamily: "'Poppins', sans-serif" }}>
 
-      {/* WEST QUADRANT SIDEBAR */}
-      <aside className="d-flex flex-column text-white shadow-lg flex-shrink-0" style={{ width: '250px', backgroundColor: '#7859FF' }}>
+      {/* WEST QUADRANT SIDEBAR - NOW USING PRODUCT CARD COLOR */}
+      <aside className="d-flex flex-column text-white shadow-lg flex-shrink-0" style={{ width: '250px', backgroundColor: '#7978E9' }}>
         
         {/* Header */}
         <div className="d-flex flex-column align-items-center justify-content-center py-4 border-bottom border-light border-opacity-25">
