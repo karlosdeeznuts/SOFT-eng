@@ -34,11 +34,15 @@ class UserController extends Controller
 
             $user = auth()->user(); 
 
-            if ($user->role === 'Employee') {
-                return redirect()->route('customer.product');
-            } elseif ($user->role === 'Admin') {
+            // Group the shared dashboard roles together
+            if ($user->role === 'Admin' || $user->role === 'Manager' || $user->role === 'Owner') {
                 return redirect()->route('admin.dashboard');
-            } elseif (strtolower($user->role) === 'delivery') {
+            } 
+            // Employee is now Cashier, routing to the POS
+            elseif ($user->role === 'Cashier') {
+                return redirect()->route('customer.product');
+            } 
+            elseif (strtolower($user->role) === 'delivery') {
                 return redirect()->intended('/delivery/dashboard');
             }
             
