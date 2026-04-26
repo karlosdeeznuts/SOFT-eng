@@ -14,15 +14,12 @@ export default function AddProduct({ isOpen, onClose }) {
     const fileInputRef = useRef(null);
     const [imagePreview, setImagePreview] = useState(null);
 
-    // Wired up to match your existing Product DB, with placeholders for the new UI fields
     const { data, setData, post, processing, errors, reset } = useForm({
         image: '',
-        product_name: '',
-        type: 'Flower',          // Placeholder for future migration
+        product_name: '', 
+        type: '',         
         description: '',
-        stocks: '',              // Maps to Quantity
-        wholesale_price: '',     // Placeholder for future migration
-        price: '',               // Maps to Retail Price in your current DB
+        price: '', // Only retaining the main Retail Price
     });
 
     const handleImageChange = (e) => {
@@ -37,7 +34,6 @@ export default function AddProduct({ isOpen, onClose }) {
 
     function submit(e) {
         e.preventDefault();
-        // Uses the existing route in your web.php
         post(route('inventory.storeProduct'), {
             onSuccess: () => {
                 reset();
@@ -58,46 +54,22 @@ export default function AddProduct({ isOpen, onClose }) {
     if (!isOpen) return null;
 
     return (
-        <div 
-            className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" 
-            style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050, padding: '15px' }}
-        >
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050, padding: '15px' }}>
             <Toaster position="top-right" expand={true} richColors />
 
-            <div 
-                className="card shadow-lg border-0" 
-                style={{ 
-                    borderRadius: '16px', 
-                    width: '100%', 
-                    maxWidth: '550px',
-                    backgroundColor: '#FFF'
-                }}
-            >
+            <div className="card shadow-lg border-0" style={{ borderRadius: '16px', width: '100%', maxWidth: '550px', backgroundColor: '#FFF' }}>
                 <div className="card-body px-4 py-4">
                     <form onSubmit={submit}>
-
                         {/* IMAGE SECTION */}
                         <div className="text-center mb-3">
-                            <h6 className="fw-bold text-dark mb-2" style={{ fontSize: '14px' }}>Product Image</h6>
+                            <h6 className="fw-bold text-dark mb-2" style={{ fontSize: '14px' }}>Flower Image</h6>
                             <div 
                                 className="d-flex flex-column justify-content-center align-items-center mx-auto"
-                                style={{ 
-                                    border: '2px dashed #DADDE1',
-                                    backgroundColor: '#F8F9FA',
-                                    borderRadius: '10px',
-                                    height: '90px',
-                                    maxWidth: '300px',
-                                    cursor: 'pointer'
-                                }}
+                                style={{ border: '2px dashed #DADDE1', backgroundColor: '#F8F9FA', borderRadius: '10px', height: '90px', maxWidth: '300px', cursor: 'pointer' }}
                                 onClick={() => fileInputRef.current.click()}
                             >
                                 {imagePreview ? (
-                                    <img 
-                                        src={imagePreview} 
-                                        alt="Preview" 
-                                        className="object-fit-cover rounded"
-                                        style={{ height: '100%', width: '100%' }}
-                                    />
+                                    <img src={imagePreview} alt="Preview" className="object-fit-cover rounded" style={{ height: '100%', width: '100%' }} />
                                 ) : (
                                     <>
                                         <UploadIcon />
@@ -105,41 +77,29 @@ export default function AddProduct({ isOpen, onClose }) {
                                     </>
                                 )}
                             </div>
-                            <input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                className="d-none" 
-                                onChange={handleImageChange} 
-                                accept="image/png, image/jpeg, image/jpg" 
-                            />
+                            <input type="file" ref={fileInputRef} className="d-none" onChange={handleImageChange} accept="image/png, image/jpeg, image/jpg" />
                             {errors.image && <div className="text-danger mt-1" style={{ fontSize: '12px' }}>{errors.image}</div>}
                         </div>
 
-                        {/* TITLE */}
-                        <h4 className="fw-bold text-center mb-3">Add Product</h4>
+                        <h4 className="fw-bold text-center mb-3">Add Flower</h4>
 
-                        {/* FORM - Tightly packed */}
                         <div className="row g-2">
                             <div className="col-12">
-                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Product Name</label>
+                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Flower Name</label>
                                 <input type="text" className={`form-control form-control-sm ${errors.product_name ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} placeholder="e.g. Red Roses Bouquet" value={data.product_name} onChange={(e) => setData('product_name', e.target.value)} />
                                 {errors.product_name && <div className="invalid-feedback">{errors.product_name}</div>}
                             </div>
 
                             <div className="col-md-6">
                                 <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Type</label>
-                                <select className="form-select form-select-sm" style={{ borderRadius: '8px' }} value={data.type} onChange={(e) => setData('type', e.target.value)}>
-                                    <option value="Flower">Flower</option>
-                                    <option value="Bouquet">Bouquet</option>
-                                    <option value="Vase">Vase</option>
-                                    <option value="Add-on">Add-on</option>
-                                </select>
+                                <input type="text" className={`form-control form-control-sm ${errors.type ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} placeholder="e.g. Bouquet, Vase" value={data.type} onChange={(e) => setData('type', e.target.value)} />
+                                {errors.type && <div className="invalid-feedback">{errors.type}</div>}
                             </div>
 
                             <div className="col-md-6">
-                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Quantity (Stocks)</label>
-                                <input type="number" className={`form-control form-control-sm ${errors.stocks ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} placeholder="0" value={data.stocks} onChange={(e) => setData('stocks', e.target.value)} />
-                                {errors.stocks && <div className="invalid-feedback">{errors.stocks}</div>}
+                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Price (₱)</label>
+                                <input type="number" className={`form-control form-control-sm ${errors.price ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} placeholder="0.00" value={data.price} onChange={(e) => setData('price', e.target.value)} />
+                                {errors.price && <div className="invalid-feedback">{errors.price}</div>}
                             </div>
 
                             <div className="col-12">
@@ -147,28 +107,11 @@ export default function AddProduct({ isOpen, onClose }) {
                                 <textarea className={`form-control form-control-sm ${errors.description ? 'is-invalid' : ''}`} style={{ borderRadius: '8px', resize: 'none' }} rows="2" placeholder="Brief description..." value={data.description} onChange={(e) => setData('description', e.target.value)}></textarea>
                                 {errors.description && <div className="invalid-feedback">{errors.description}</div>}
                             </div>
-
-                            <div className="col-md-6">
-                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Wholesale Price (₱)</label>
-                                <input type="number" className={`form-control form-control-sm ${errors.wholesale_price ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} placeholder="0.00" value={data.wholesale_price} onChange={(e) => setData('wholesale_price', e.target.value)} />
-                                {errors.wholesale_price && <div className="invalid-feedback">{errors.wholesale_price}</div>}
-                            </div>
-
-                            <div className="col-md-6">
-                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Retail Price (₱)</label>
-                                <input type="number" className={`form-control form-control-sm ${errors.price ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} placeholder="0.00" value={data.price} onChange={(e) => setData('price', e.target.value)} />
-                                {errors.price && <div className="invalid-feedback">{errors.price}</div>}
-                            </div>
                         </div>
 
-                        {/* BUTTONS */}
                         <div className="d-flex justify-content-center gap-3 mt-4">
-                            <button type="button" onClick={onClose} className="btn btn-sm fw-bold text-white px-4" style={{ backgroundColor: '#DC3545', borderRadius: '8px', minWidth: '120px', padding: '8px' }}>
-                                Cancel
-                            </button>
-                            <button type="submit" disabled={processing} className="btn btn-sm fw-bold text-white px-4" style={{ backgroundColor: '#0D6EFD', borderRadius: '8px', minWidth: '120px', padding: '8px' }}>
-                                {processing ? 'Saving...' : 'Submit'}
-                            </button>
+                            <button type="button" onClick={onClose} className="btn btn-sm fw-bold text-white px-4" style={{ backgroundColor: '#DC3545', borderRadius: '8px', minWidth: '120px', padding: '8px' }}>Cancel</button>
+                            <button type="submit" disabled={processing} className="btn btn-sm fw-bold text-white px-4" style={{ backgroundColor: '#0D6EFD', borderRadius: '8px', minWidth: '120px', padding: '8px' }}>{processing ? 'Saving...' : 'Submit'}</button>
                         </div>
                     </form>
                 </div>
