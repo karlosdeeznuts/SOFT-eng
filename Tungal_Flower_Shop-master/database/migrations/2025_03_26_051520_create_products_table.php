@@ -9,15 +9,16 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+public function up(): void
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('product_name');
-            $table->text('description');
-            $table->decimal('price',8,2);
-            $table->integer('stocks');
-            $table->string('status')->default('Active');
+            $table->string('type')->default('Flower'); // NEW
+            $table->longText('description');
+            $table->decimal('wholesale_price', 10, 2)->nullable(); // NEW
+            $table->integer('price'); // Keeping this as your Retail Price
+            $table->integer('stocks')->default(0); // NEW: Forces 0 initially
             $table->string('image');
             $table->timestamps();
         });
