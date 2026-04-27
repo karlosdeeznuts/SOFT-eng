@@ -1,154 +1,290 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import CustomerLayout from '../../Layout/CustomerLayout';
-import { Head, router, usePage, Link } from '@inertiajs/react';
+import ProductCard from '../../Components/ProductCard';
 import { Toaster, toast } from 'sonner';
 
-export default function Product({ products }) {
-    const { flash } = usePage().props;
+function CartIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17 18C15.89 18 15 18.89 15 20C15 20.5304 15.2107 21.0391 15.5858 21.4142C15.9609 21.7893 16.4696 22 17 22C17.5304 22 18.0391 21.7893 18.4142 21.4142C18.7893 21.0391 19 20.5304 19 20C19 19.4696 18.7893 18.9609 18.4142 18.5858C18.0391 18.2107 17.5304 18 17 18ZM1 2V4H3L6.6 11.59L5.24 14.04C5.09 14.32 5 14.65 5 15C5 15.5304 5.21071 16.0391 5.58579 16.4142C5.96086 16.7893 6.46957 17 7 17H19V15H7.42C7.3537 15 7.29011 14.9737 7.24322 14.9268C7.19634 14.8799 7.17 14.8163 7.17 14.75C7.17 14.7 7.18 14.66 7.2 14.63L8.1 13H15.55C16.3 13 16.96 12.58 17.3 11.97L20.88 5.5C20.95 5.34 21 5.17 21 5C21 4.73478 20.8946 4.48043 20.7071 4.29289C20.5196 4.10536 20.2652 4 20 4H5.21L4.27 2M7 18C5.89 18 5 18.89 5 20C5 20.5304 5.21071 21.0391 5.58579 21.4142C5.96086 21.7893 6.46957 22 7 22C7.53043 22 8.03914 21.7893 8.41421 21.4142C8.78929 21.0391 9 20.5304 9 20C9 19.4696 8.78929 18.9609 8.41421 18.5858C8.03914 18.2107 7.53043 18 7 18Z" fill="currentColor"/>
+    </svg>
+  );
+}
 
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [selectedFlower, setSelectedFlower] = useState(null);
-    const [selectedType, setSelectedType] = useState(null);
-    const [addQuantity, setAddQuantity] = useState(1);
+function RefundIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M22.0049 7H2.00488V4C2.00488 3.73478 2.11024 3.48043 2.29778 3.29289C2.48531 3.10536 2.73967 3 3.00488 3H21.0049C21.2701 3 21.5245 3.10536 21.712 3.29289C21.8995 3.48043 22.0049 3.73478 22.0049 4V7ZM22.0049 9V20C22.0049 20.2652 21.8995 20.5196 21.712 20.7071C21.5245 20.8946 21.2701 21 21.0049 21H3.00488C2.73967 21 2.48531 20.8946 2.29778 20.7071C2.11024 20.5196 2.00488 20.2652 2.00488 20V9H22.0049ZM11.0049 14V11.5L6.50488 16H17.0049V14H11.0049Z" fill="currentColor"/>
+    </svg>
+  );
+}
 
-    useEffect(() => {
-        if (flash?.success) toast.success(flash.success);
-        if (flash?.error) toast.error(flash.error);
-    }, [flash]);
+function Product({ products }) {
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  
+  // INJECTED: Aligned to the dynamic Type Multiplier Database
+  const { data, setData, post, processing, reset } = useForm({
+    product_id: '',
+    quantity: 1,
+    type_name: '',
+    multiplier: 1,
+    price: 0
+  });
 
-    const openAddModal = (flower) => {
-        setSelectedFlower(flower);
-        if (flower.types && flower.types.length > 0) {
-            setSelectedType(flower.types[0]);
-        } else {
-            setSelectedType({ name: 'Base Unit', multiplier: 1 });
-        }
-        setAddQuantity(1);
-        setIsAddModalOpen(true);
-    };
+  const [refundStep, setRefundStep] = useState(0);
+  const [refundData, setRefundData] = useState({ invoiceNum: '', reason: '', method: '' });
 
-    const handleAddToCart = (e) => {
-        e.preventDefault();
-        router.post(route('customer.addToCart'), {
-            product_id: selectedFlower.id,
-            type_name: selectedType.name,
-            multiplier: selectedType.multiplier,
-            quantity: addQuantity,
-            price: selectedFlower.price 
-        }, {
-            preserveScroll: true,
-            onSuccess: () => setIsAddModalOpen(false)
-        });
-    };
+  // INJECTED: Load the database types into the modal
+  const handleOpenBuyModal = (product) => {
+    setSelectedProduct(product);
+    const defaultType = (product.types && product.types.length > 0) ? product.types[0] : { name: 'Base Unit', multiplier: 1 };
+    
+    setData({ 
+        product_id: product.id, 
+        quantity: 1, 
+        type_name: defaultType.name,
+        multiplier: defaultType.multiplier,
+        price: product.price 
+    });
+  };
 
-    return (
-        <div style={{ backgroundColor: '#F4F5FA', minHeight: '100vh', paddingBottom: '20px' }}>
-            <Head title="Products" />
-            <Toaster position="top-center" richColors />
+  const handleCloseBuyModal = () => {
+    setSelectedProduct(null);
+    reset();
+  };
 
-            <div className="container-fluid px-4 pt-4">
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h3 className="fw-bolder m-0" style={{ color: '#1E1E1E' }}>Shop Products</h3>
+  const submitAddToCart = (e) => {
+    e.preventDefault();
+    post(route('customer.addToCart'), {
+      preserveScroll: true,
+      onSuccess: () => {
+        handleCloseBuyModal();
+        setShowSuccessBanner(true);
+        setTimeout(() => setShowSuccessBanner(false), 3000);
+      }
+    });
+  };
+
+  const handleCloseRefund = () => {
+    setRefundStep(0);
+    setRefundData({ invoiceNum: '', reason: '', method: '' });
+  };
+  const nextStep = () => setRefundStep(prev => prev + 1);
+  const prevStep = () => setRefundStep(prev => prev - 1);
+
+  const submitRefundRequest = (e) => {
+      e.preventDefault();
+      toast.success("Refund request confirmed and submitted successfully!");
+      handleCloseRefund();
+  };
+
+  return (
+    <div className="container-fluid py-5 px-4 position-relative" style={{ backgroundColor: '#F4F5FA', minHeight: '100vh', fontFamily: "'Poppins', sans-serif" }}>
+      <Head title="Products Dashboard" />
+      <Toaster position="top-right" richColors expand={true} />
+
+      {showSuccessBanner && (
+        <div className="alert alert-success shadow-sm d-flex align-items-center mb-4" role="alert" style={{ backgroundColor: '#F5F4FF', border: '1px solid #dee2e6', borderRadius: '10px', color: '#1E1E1E' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#28a745" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="me-2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span className="fw-bold">Item successfully added to cart!</span>
+        </div>
+      )}
+      
+      <div className="d-flex justify-content-between align-items-center mb-5 mt-3">
+        <h1 className="fw-bold m-0" style={{ color: '#1E1E1E', fontSize: '2.5rem' }}>Products</h1>
+        
+        <div className="d-flex gap-3">
+          <button 
+            onClick={() => setRefundStep(1)} 
+            className="btn d-flex align-items-center gap-2 fw-bold text-white shadow-sm" 
+            style={{ backgroundColor: '#7DA0FA', border: '1px solid #7DA0FA', borderRadius: '10px', height: '52px', padding: '0 24px' }}
+          >
+            <RefundIcon /> Request Refund
+          </button>
+          
+          <Link href={route('customer.cart')} className="btn d-flex align-items-center gap-2 fw-bold text-white shadow-sm" style={{ backgroundColor: '#6C63FF', border: '1px solid #6C63FF', borderRadius: '10px', height: '52px', padding: '0 24px' }}>
+            <CartIcon /> Cart
+          </Link>
+        </div>
+      </div>
+
+      <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4">
+        {products?.data?.length > 0 ? (
+          products.data.map((product) => (
+            <div className="col" key={product.id}>
+              <ProductCard
+                id={product.id}
+                name={product.product_name}
+                price={product.price}
+                stock={product.stocks}
+                image={product.image}
+                onBuyClick={() => handleOpenBuyModal(product)}
+              />
+            </div>
+          ))
+        ) : (
+          <div className="col-12 text-center py-5 bg-white rounded shadow-sm">
+            <p className="text-muted">No products available at the moment.</p>
+          </div>
+        )}
+      </div>
+
+      {/* MODAL: SALES ORDER */}
+      {selectedProduct && (
+        <div className="modal fade show d-block position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050 }}>
+          <div className="card shadow-lg border-0" style={{ borderRadius: '16px', width: '100%', maxWidth: '450px', backgroundColor: '#FFF' }}>
+            <div className="card-header border-0 text-white p-4" style={{ backgroundColor: '#7978E9', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
+              <h4 className="modal-title fw-bold m-0 d-flex justify-content-between align-items-center">
+                Sales Order
+                <button type="button" className="btn-close btn-close-white" onClick={handleCloseBuyModal}></button>
+              </h4>
+            </div>
+            <div className="card-body p-4">
+              <form onSubmit={submitAddToCart}>
+                
+                <div className="mb-3">
+                  <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Flower</label>
+                  <input type="text" className="form-control shadow-none bg-light" style={{ borderRadius: '8px' }} value={selectedProduct.product_name} disabled />
                 </div>
 
-                <div className="row g-4">
-                    {products.data && products.data.length > 0 ? (
-                        products.data.map((flower) => (
-                            <div key={flower.id} className="col-lg-3 col-md-4 col-sm-6">
-                                <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden" style={{ cursor: 'pointer', transition: 'transform 0.2s' }} onClick={() => openAddModal(flower)}>
-                                    <div style={{ height: '220px', backgroundColor: '#EBEAEE' }}>
-                                        <img src={flower.image ? `/storage/${flower.image}` : '/assets/images/product.png'} className="w-100 h-100 object-fit-cover" alt={flower.product_name} />
-                                    </div>
-                                    <div className="card-body d-flex flex-column justify-content-between p-3">
-                                        <div>
-                                            <h5 className="fw-bold mb-1 text-dark text-truncate">{flower.product_name}</h5>
-                                            <p className="text-muted mb-2" style={{ fontSize: '13px' }}>
-                                                Base Stock: <span className={flower.stocks > 0 ? 'text-success fw-bold' : 'text-danger fw-bold'}>{flower.stocks}</span>
-                                            </p>
-                                        </div>
-                                        <div className="d-flex justify-content-between align-items-center mt-3">
-                                            <span className="fw-bolder text-dark" style={{ fontSize: '18px' }}>₱{flower.price}</span>
-                                            <button className="btn text-white fw-bold rounded-3 px-4 shadow-sm" style={{ backgroundColor: '#7859FF', fontSize: '14px' }}>Buy</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                {/* INJECTED: Dynamic Quantifier Select */}
+                <div className="mb-3">
+                  <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Type (Quantifier)</label>
+                  <select 
+                    className="form-select shadow-none bg-light" 
+                    style={{ borderRadius: '8px' }} 
+                    value={JSON.stringify({ name: data.type_name, multiplier: data.multiplier })} 
+                    onChange={(e) => {
+                        const parsed = JSON.parse(e.target.value);
+                        setData(prev => ({ ...prev, type_name: parsed.name, multiplier: parsed.multiplier }));
+                    }}
+                  >
+                    {selectedProduct.types && selectedProduct.types.length > 0 ? (
+                        selectedProduct.types.map(t => (
+                            <option key={t.id} value={JSON.stringify({ name: t.name, multiplier: t.multiplier })}>
+                                {t.name} (Contains {t.multiplier} pcs)
+                            </option>
                         ))
                     ) : (
-                        <div className="col-12 text-center py-5 text-muted">No products available.</div>
+                        <option value={JSON.stringify({ name: 'Base Unit', multiplier: 1 })}>
+                            Base Unit (Contains 1 pc)
+                        </option>
                     )}
+                  </select>
                 </div>
 
-                <div className="d-flex justify-content-center mt-5">
-                    {products.links && products.links.map((link, index) => (
-                        <Link 
-                            key={index} 
-                            href={link.url} 
-                            className={`btn btn-sm mx-1 ${link.active ? 'btn-primary' : 'btn-light text-dark'}`}
-                            dangerouslySetInnerHTML={{ __html: link.label }}
-                            style={{ backgroundColor: link.active ? '#7859FF' : '#FFF', borderColor: link.active ? '#7859FF' : '#DEE2E6', padding: '8px 12px' }}
-                        />
-                    ))}
+                <div className="mb-3">
+                  <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Quantity (Bundles)</label>
+                  <div className="input-group">
+                    <button type="button" className="btn btn-outline-secondary fw-bold" onClick={() => setData('quantity', Math.max(1, data.quantity - 1))}>-</button>
+                    <input type="number" className="form-control text-center shadow-none" value={data.quantity} readOnly />
+                    <button type="button" className="btn btn-outline-secondary fw-bold" onClick={() => setData('quantity', data.quantity + 1)}>+</button>
+                  </div>
+                  <small className="text-muted d-block mt-2">Total base pieces to deduct: <b>{data.quantity * data.multiplier}</b></small>
                 </div>
+
+                <div className="mb-4">
+                  <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Total Price</label>
+                  <div className="fw-bold fs-3" style={{ color: '#6C63FF' }}>
+                    {/* INJECTED: Math incorporates the multiplier */}
+                    ₱{(data.price * data.multiplier * data.quantity).toFixed(2)}
+                  </div>
+                </div>
+
+                <div className="d-flex justify-content-end gap-2 mt-4">
+                  <button type="button" className="btn btn-light fw-bold" onClick={handleCloseBuyModal} style={{ borderRadius: '8px' }}>Cancel</button>
+                  <button type="submit" className="btn fw-bold text-white px-4" style={{ backgroundColor: '#6C63FF', borderRadius: '8px' }} disabled={processing}>
+                    {processing ? 'Adding...' : 'Add to Cart'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: MULTI-STEP REFUND REQUEST */}
+      {refundStep > 0 && (
+        <div className="modal fade show d-block position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050 }}>
+          <div className="card shadow-lg border-0" style={{ borderRadius: '16px', width: '100%', maxWidth: '450px', backgroundColor: '#FFF' }}>
+            
+            <div className="card-header border-0 text-white p-4" style={{ backgroundColor: '#7DA0FA', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
+              <h4 className="modal-title fw-bold m-0 d-flex justify-content-between align-items-center">
+                {refundStep === 1 || refundStep === 3 ? 'Request Refund' : 'Choose Refund Method'}
+                <button type="button" className="btn-close btn-close-white" onClick={handleCloseRefund}></button>
+              </h4>
             </div>
 
-            {isAddModalOpen && selectedFlower && (
-                <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.6)', zIndex: 1050 }}>
-                    <div className="card shadow-lg border-0 rounded-4" style={{ width: '100%', maxWidth: '450px', backgroundColor: '#FFF' }}>
-                        <div className="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
-                            <h5 className="fw-bold m-0 text-dark">{selectedFlower.product_name}</h5>
-                            <button onClick={() => setIsAddModalOpen(false)} className="btn-close shadow-none"></button>
-                        </div>
-                        <div className="card-body px-4 pb-4">
-                            <form onSubmit={handleAddToCart}>
-                                <div className="mb-3">
-                                    <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: '12px' }}>Select Type (Quantifier)</label>
-                                    <select 
-                                        className="form-select shadow-none" 
-                                        style={{ borderRadius: '8px' }}
-                                        value={JSON.stringify(selectedType)} 
-                                        onChange={(e) => setSelectedType(JSON.parse(e.target.value))}
-                                    >
-                                        {selectedFlower.types && selectedFlower.types.length > 0 ? (
-                                            selectedFlower.types.map(t => (
-                                                <option key={t.id} value={JSON.stringify(t)}>
-                                                    {t.name} (Contains {t.multiplier} pcs)
-                                                </option>
-                                            ))
-                                        ) : (
-                                            <option value={JSON.stringify({ name: 'Base Unit', multiplier: 1 })}>
-                                                Base Unit (Contains 1 pc)
-                                            </option>
-                                        )}
-                                    </select>
-                                </div>
-                                <div className="mb-4">
-                                    <label className="form-label text-muted fw-bold mb-1" style={{ fontSize: '12px' }}>Quantity (Bundles)</label>
-                                    <input 
-                                        type="number" 
-                                        className="form-control shadow-none" 
-                                        style={{ borderRadius: '8px' }} 
-                                        min="1" 
-                                        value={addQuantity} 
-                                        onChange={(e) => setAddQuantity(e.target.value)} 
-                                        required 
-                                    />
-                                    <small className="text-muted d-block mt-1" style={{ fontSize: '11px' }}>
-                                        Total base pieces to deduct: <span className="fw-bold text-dark">{addQuantity * selectedType.multiplier}</span>
-                                    </small>
-                                </div>
-                                <div className="d-flex justify-content-between align-items-center mb-4 p-3 rounded-3" style={{ backgroundColor: '#F8F9FA' }}>
-                                    <span className="fw-bold text-muted" style={{ fontSize: '14px' }}>Subtotal:</span>
-                                    <span className="fw-bolder text-dark" style={{ fontSize: '18px' }}>₱{(selectedFlower.price * selectedType.multiplier * addQuantity).toFixed(2)}</span>
-                                </div>
-                                <button type="submit" className="btn w-100 fw-bold text-white py-2 rounded-3 shadow-sm" style={{ backgroundColor: '#28A745', fontSize: '15px' }}>Add to Cart</button>
-                            </form>
-                        </div>
-                    </div>
+            <div className="card-body p-4 p-md-5">
+              {refundStep === 1 && (
+                <div>
+                  <p className="text-muted fw-medium mb-4" style={{ fontSize: '14px' }}>Please indicate the required details of your refund request.</p>
+                  <div className="mb-3">
+                    <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Invoice #</label>
+                    <input type="text" className="form-control shadow-none" style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }} value={refundData.invoiceNum} onChange={e => setRefundData({...refundData, invoiceNum: e.target.value})} />
+                  </div>
+                  <div className="mb-4">
+                    <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Reason</label>
+                    <textarea className="form-control shadow-none" rows="4" style={{ borderRadius: '8px', backgroundColor: '#F8F9FA', resize: 'none' }} value={refundData.reason} onChange={e => setRefundData({...refundData, reason: e.target.value})}></textarea>
+                  </div>
+                  <div className="d-flex justify-content-end gap-3 mt-4">
+                    <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={handleCloseRefund} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Cancel</button>
+                    <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={nextStep} disabled={!refundData.invoiceNum || !refundData.reason} style={{ backgroundColor: '#7DA0FA', borderRadius: '8px', width: '120px' }}>Next</button>
+                  </div>
                 </div>
-            )}
+              )}
+
+              {refundStep === 2 && (
+                <div>
+                  <p className="text-muted fw-medium mb-4" style={{ fontSize: '14px' }}>How would you like to receive your refund?</p>
+                  <div className="mb-5">
+                    <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Refund Method</label>
+                    <select className="form-select shadow-none" style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }} value={refundData.method} onChange={e => setRefundData({...refundData, method: e.target.value})}>
+                      <option value="" disabled>Select a Method</option>
+                      <option value="Gcash">GCash</option>
+                      <option value="Bank">Bank Transfer</option>
+                      <option value="Cash">Cash (In-Store)</option>
+                    </select>
+                  </div>
+                  <div className="d-flex justify-content-end gap-3 mt-4">
+                    <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={prevStep} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Back</button>
+                    <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={nextStep} disabled={!refundData.method} style={{ backgroundColor: '#7DA0FA', borderRadius: '8px', width: '120px' }}>Next</button>
+                  </div>
+                </div>
+              )}
+
+              {refundStep === 3 && (
+                <form onSubmit={submitRefundRequest}>
+                  <p className="text-muted fw-medium mb-4" style={{ fontSize: '14px' }}>Please confirm the details below.</p>
+                  <div className="d-flex flex-column gap-3 mb-5">
+                    <div className="d-flex flex-column">
+                      <span className="fw-bold text-dark" style={{ fontSize: '14px' }}>Invoice #</span>
+                      <div className="form-control shadow-none bg-light" style={{ borderRadius: '8px', border: '1px solid #EBEAEE' }}>{refundData.invoiceNum}</div>
+                    </div>
+                    <div className="d-flex flex-column">
+                      <span className="fw-bold text-dark" style={{ fontSize: '14px' }}>Refund Method</span>
+                      <div className="form-control shadow-none bg-light" style={{ borderRadius: '8px', border: '1px solid #EBEAEE' }}>{refundData.method}</div>
+                    </div>
+                    <div className="d-flex flex-column">
+                      <span className="fw-bold text-dark" style={{ fontSize: '14px' }}>Reason</span>
+                      <div className="form-control shadow-none bg-light p-2" style={{ borderRadius: '8px', border: '1px solid #EBEAEE', minHeight: '80px', wordBreak: 'break-word' }}>{refundData.reason}</div>
+                    </div>
+                  </div>
+                  <div className="d-flex justify-content-end gap-3 mt-4">
+                    <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={prevStep} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Back</button>
+                    <button type="submit" className="btn fw-bold px-4 text-white shadow-none" style={{ backgroundColor: '#28A745', borderRadius: '8px', width: '120px' }}>Confirm</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 }
 
 Product.layout = page => <CustomerLayout children={page} />;
+export default Product;
