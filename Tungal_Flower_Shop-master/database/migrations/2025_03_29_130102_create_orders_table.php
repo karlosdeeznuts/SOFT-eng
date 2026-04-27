@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
@@ -16,6 +13,8 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained();
             $table->integer('quantity');
             $table->decimal('total',10,2);
+            $table->decimal('discount_percentage', 5, 2)->nullable();
+            $table->decimal('discount_amount', 10, 2)->default(0);
             $table->decimal('cash_recieved',10,2);
             $table->decimal('change',10,2);
             $table->string('order_status')->default('Completed');
@@ -23,9 +22,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('orders');

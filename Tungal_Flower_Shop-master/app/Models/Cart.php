@@ -11,11 +11,12 @@ class Cart extends Model
     protected $fillable = [
         'user_id',
         'product_id',
+        'type_name',
+        'multiplier',
         'quantity',
         'subtotal'
     ];
 
-    // Include a model relationship
     public function product(){
         return $this->belongsTo((Product::class));
     }

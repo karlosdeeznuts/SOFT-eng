@@ -11,16 +11,19 @@ class Product extends Model
 
     protected $fillable = [
         'product_name',
-        'type',
         'description',
         'price',
         'stocks',
         'image'
     ];
 
-    // Let Laravel send the raw global timestamp. React will format it locally.
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function types()
+    {
+        return $this->hasMany(ProductType::class);
+    }
 }
