@@ -11,6 +11,8 @@ class OrderDetail extends Model
         'order_id',
         'product_id',
         'user_id',
+        'type_name',
+        'multiplier',
         'quantity',
         'total',
     ];

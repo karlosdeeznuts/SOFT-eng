@@ -22,3 +22,13 @@
 /node_modules
 /vendor
 .env
+
+# Ignore local user-uploaded files
+/Tungal_Flower_Shop-master/storage/app/public/products/*
+/Tungal_Flower_Shop-master/storage/app/public/profiles/*
+/Tungal_Flower_Shop-master/storage/app/public/proofs/*
+
+# But DO NOT ignore the empty folders themselves
+!/Tungal_Flower_Shop-master/storage/app/public/products/.gitignore
+!/Tungal_Flower_Shop-master/storage/app/public/profiles/.gitignore
+!/Tungal_Flower_Shop-master/storage/app/public/proofs/.gitignore

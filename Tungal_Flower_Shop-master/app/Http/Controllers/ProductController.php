@@ -2,137 +2,130 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Cart;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
+    public function showInventoryProduct(){
+        $products = Product::with('types')->latest()->paginate(6);
+        return inertia('Admin/Inventory', ['products' => $products]);
+    }
+
+    public function showProduct(){
+        $products = Product::with('types')->latest()->paginate(8);
+        return inertia('Customer/Product', ['products' => $products]);
+    }
+
     public function storeProduct(Request $request){
-        // dd($request);
         $fields = $request->validate([
             'product_name' => 'required',
             'description' => 'required',
             'price' => 'required|integer',
-            'stocks' => 'required|integer',
-            'image' => 'required|file|mimes:jpg,jpeg,png|max:5120'
+            'image' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
+            'types' => 'nullable|array',
+            'types.*.name' => 'required|string',
+            'types.*.multiplier' => 'required|integer|min:1',
         ]);
 
+        $imagePath = null;
         if($request->hasFile('image')){
-            $fields['image'] = Storage::disk('public')->put('products',$request->image);
-
-            // Ensure price and stocks are integers
-            $fields['price'] = (int) $fields['price'];
-            $fields['stocks'] = (int) $fields['stocks'];
-
-            // Store data to Products Table
-            $product = Product::create([
-                'product_name' => $fields['product_name'],
-                'description' => $fields['description'],
-                'price' => $fields['price'],
-                'stocks' => $fields['stocks'],
-                'image' => $fields['image']
-            ]);
-
-            if($product){
-                return redirect()->back()->with('success', 'Product added successfully!');
-            }else{
-                return redirect()->back()->with('error','Failed to store the data.');
-            }
+            $imagePath = Storage::disk('public')->put('products', $request->image);
         }
-    }
 
-    public function showInventoryProduct(){
-        $products = Product::latest()->paginate(6);
-        return inertia('Admin/Inventory',['products' => $products]);
-    }
-
-    public function displayProduct(){
-        $products = Product::latest()->paginate(6);
-        return inertia('Customer/Product',['products' => $products]);
-    }
-
-    public function viewProduct($product_id){
-        $products = Product::find($product_id);
-        return inertia('Admin/Inventory_Features/ViewProduct',
-        ['products' => $products]);
-    }
-
-    public function updateProduct(Request $request){
-        // dd($request);
-        $fields = $request->validate([
-            'product_name' => 'required',
-            'description' => 'required',
-            'price' => 'required',
-            'stocks' => 'required|integer',
-        ]);
-
-        $product = Product::where('id',$request->id)->update([
+        $product = Product::create([
             'product_name' => $fields['product_name'],
             'description' => $fields['description'],
             'price' => $fields['price'],
-            'stocks' => $fields['stocks'],
+            'image' => $imagePath
         ]);
 
-        if($product){
-            return redirect()->route('inventory.viewProduct',['product_id' => $request->id])
-            ->with('success',$fields['product_name'] . ' product update successfully.');
-        }else{
-            return redirect()->back()->with('error','Updating product information failed.');
-        }
-    }
-
-    public function showProduct($product_id){
-        // dd($product_id);
-        $product = Product::find($product_id);
-
-        if($product){
-            return inertia('Customer/Product_Features/ShowProduct',['product' => $product]);
-        }
-    }
-
-    public function addToCart(Request $request){
-        $fields = $request->validate([
-            'product_id' => 'required|integer',
-            'quantity' => 'required|integer',
-        ]);
-
-        $user = auth()->user();
-
-        $product = Product::find($request->product_id);
-
-        $existingProduct = Cart::where('product_id',$fields['product_id'])
-        ->where('user_id',$user->id)->first();
-
-        if($existingProduct){
-            $updateCart = Cart::where('id', $existingProduct->id)->update([
-            'quantity' => $existingProduct->quantity + $fields['quantity'],
-            'subtotal' => $existingProduct->subtotal + ($product->price * $fields['quantity']),
-            ]);
-
-            if($updateCart){
-                // FIXED: Return back instead of navigating away
-                return redirect()->back()->with('success',$product->product_name . ' add to cart successfully.');
-            }else{
-                return redirect()->back()->with('error',"Product can't add to cart.");
-            }
-        }else{
-            if($product){
-                $addToCart = Cart::create([
-                    'user_id' => $user->id,
-                    'product_id' => $fields['product_id'],
-                    'quantity' => $fields['quantity'],
-                    'subtotal' => $product->price * $fields['quantity'],
+        if (!empty($fields['types'])) {
+            foreach ($fields['types'] as $type) {
+                $product->types()->create([
+                    'name' => $type['name'], // FIXED: Matches your database column perfectly
+                    'multiplier' => $type['multiplier']
                 ]);
+            }
+        }
 
-                if($addToCart){
-                    // FIXED: Return back instead of navigating away
-                    return redirect()->back()->with('success',$product->product_name . ' add to cart successfully.');
-                }else{
-                    return redirect()->back()->with('error',"Product can't add to cart.");
+        return redirect()->back()->with('success', 'Flower added successfully to inventory.');
+    }
+
+    public function updateProduct(Request $request){
+        $fields = $request->validate([
+            'id' => 'required|integer',
+            'product_name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'price' => 'required|numeric|min:0',
+            'image' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
+            'types' => 'nullable|array',
+            'types.*.name' => 'required|string',
+            'types.*.multiplier' => 'required|integer|min:1',
+        ]);
+
+        $product = Product::find($request->id);
+
+        if($product){
+            $updateData = [
+                'product_name' => $fields['product_name'],
+                'description' => $fields['description'],
+                'price' => $fields['price'],
+            ];
+
+            if($request->hasFile('image')){
+                $updateData['image'] = Storage::disk('public')->put('products', $request->image);
+            }
+
+            $product->update($updateData);
+
+            $product->types()->delete();
+            if (!empty($fields['types'])) {
+                foreach ($fields['types'] as $type) {
+                    $product->types()->create([
+                        'name' => $type['name'], // FIXED: Matches your database column perfectly
+                        'multiplier' => $type['multiplier']
+                    ]);
                 }
             }
+
+            return redirect()->back()->with('success', $fields['product_name'] . ' updated successfully.');
+        }else{
+            return redirect()->back()->with('error','Updating flower information failed.');
         }
+    }
+
+    public function destroyProduct(Product $product){
+        if ($product->image) {
+            Storage::disk('public')->delete($product->image);
+        }
+        $product->delete();
+        return redirect()->back()->with('success', 'Product deleted successfully.');
+    }
+
+    public function stockIn(Request $request) {
+        $request->validate([
+            'id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1'
+        ]);
+        $product = Product::findOrFail($request->id);
+        $product->stocks += $request->quantity;
+        $product->save();
+        return redirect()->back()->with('success', "Added {$request->quantity} stocks to {$product->product_name}.");
+    }
+
+    public function stockOut(Request $request) {
+        $request->validate([
+            'id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1'
+        ]);
+        $product = Product::findOrFail($request->id);
+        if ($product->stocks < $request->quantity) {
+            return redirect()->back()->with('error', "Not enough stock for {$product->product_name}.");
+        }
+        $product->stocks -= $request->quantity;
+        $product->save();
+        return redirect()->back()->with('success', "Removed {$request->quantity} stocks from {$product->product_name}.");
     }
 }

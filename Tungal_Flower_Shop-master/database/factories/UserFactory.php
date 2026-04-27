@@ -21,18 +21,20 @@ class UserFactory extends Factory
      *
      * @return array<string, mixed>
      */
-    public function definition(): array
+public function definition(): array
     {
         return [
             'firstname'       => $this->faker->firstName,
             'lastname'        => $this->faker->lastName,
             'contact_number'  => $this->faker->unique()->numerify('09#########'),
-            'role'            => $this->faker->randomElement(['Admin', 'Employee']),
+            // STRICTLY the 5 roles you defined
+            'role'            => $this->faker->randomElement(['Admin', 'Cashier', 'Delivery', 'Manager', 'Owner']),
+            'address'         => $this->faker->address,
+            'hired_date'      => $this->faker->dateTimeBetween('-2 years', 'now')->format('Y-m-d'),
             'username'        => $this->faker->unique()->userName,
-            'password'        => Hash::make('password'),   // change if desired
-            // store a dummy 200×200 jpg in storage/app/public/profiles
+            'password'        => \Illuminate\Support\Facades\Hash::make('!Password123'),
             'profile'         => 'profiles/' . $this->faker->uuid . '.jpg',
-            'remember_token'  => Str::random(10),
+            'remember_token'  => \Illuminate\Support\Str::random(10),
             'created_at'      => $this->faker->dateTimeBetween('-6 months'),
             'updated_at'      => now(),
         ];

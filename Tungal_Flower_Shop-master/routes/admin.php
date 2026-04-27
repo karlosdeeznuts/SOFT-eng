@@ -4,6 +4,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Controllers\ProductController;
+use Illuminate\Support\Facades\Route; // Added this just to be safe
 
 Route::middleware(['auth',AdminMiddleware::class])->group(function () {
     // Admin Routes
@@ -68,6 +69,10 @@ Route::middleware(['auth',AdminMiddleware::class])->group(function () {
     })->name('inventory.addProduct');
 
     Route::post('/admin/inventory/addProduct/store',[ProductController::class,'storeProduct'])->name('inventory.storeProduct');
+
+    // --- NEW STOCK IN AND OUT ROUTES ---
+    Route::post('/admin/inventory/stock-in', [ProductController::class, 'stockIn'])->name('inventory.stockIn');
+    Route::post('/admin/inventory/stock-out', [ProductController::class, 'stockOut'])->name('inventory.stockOut');
 
     Route::get('/admin/inventory/viewProduct/{product_id}', [ProductController::class,'viewProduct'])
     ->name('inventory.viewProduct');

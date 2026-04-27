@@ -11,6 +11,8 @@ class Order extends Model
         'user_id',
         'quantity',
         'total',
+        'discount_percentage',
+        'discount_amount',
         'cash_recieved',
         'change',
         'order_status',
@@ -20,5 +22,4 @@ class Order extends Model
     public function details() {
         return $this->hasMany(OrderDetail::class, 'order_id');
     }
-    
 }

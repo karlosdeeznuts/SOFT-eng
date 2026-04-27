@@ -10,7 +10,10 @@ import MetaTagsLayout from './MetaTagsLayout';
 
 export default function AdminLayout({ children }) {
     const route = useRoute();
-    const { auth } = usePage().props
+    const { auth } = usePage().props;
+
+    // Extract the role, fallback to Admin just in case
+    const role = auth?.user?.role || 'Admin';
 
     const activeLinkStyle = { backgroundColor: '#6d78e3', color: 'white', fontWeight: 'bold' };
     const inactiveLinkStyle = { color: '#6c757d' };
@@ -37,30 +40,59 @@ export default function AdminLayout({ children }) {
                     <h6 className='fw-bold mb-5 mt-2 text-center text-dark' style={{ letterSpacing: '0.5px' }}>TUNGAL'S FLOWER SHOP</h6>
 
                     <nav className="w-100 d-flex flex-column gap-2 mb-auto">
+                        {/* Everyone gets the Dashboard */}
                         <Link href={route('admin.dashboard')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.dashboard') ? activeLinkStyle : inactiveLinkStyle}>
                             <BsFillGridFill className="fs-5" /> Dashboard
                         </Link>
-                        <Link href={route('admin.inventory')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.inventory') ? activeLinkStyle : inactiveLinkStyle}>
-                            <BsBoxSeam className="fs-5" /> Inventory
-                        </Link>
-                        <Link href={route('admin.report')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.report') ? activeLinkStyle : inactiveLinkStyle}>
-                            <BsFileText className="fs-5" /> Report
-                        </Link>
-                        <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
-                            <BsTruck className="fs-5" /> Supplier
-                        </Link>
-                        <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
-                            <BsArrowReturnLeft className="fs-5" /> Returns
-                        </Link>
-                        <Link href={route('admin.employee')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.employee') ? activeLinkStyle : inactiveLinkStyle}>
-                            <IoPeople className="fs-5" /> Employee
-                        </Link>
-                        <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
-                            <BsCashStack className="fs-5" /> Pay
-                        </Link>
-                        <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
-                            <BsPersonCheck className="fs-5" /> Approvals
-                        </Link>
+                        
+                        {/* Admin & Manager */}
+                        {(role === 'Admin' || role === 'Manager') && (
+                            <Link href={route('admin.inventory')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.inventory') ? activeLinkStyle : inactiveLinkStyle}>
+                                <BsBoxSeam className="fs-5" /> Inventory
+                            </Link>
+                        )}
+                        
+                        {/* Admin & Owner */}
+                        {(role === 'Admin' || role === 'Owner') && (
+                            <Link href={route('admin.report')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.report') ? activeLinkStyle : inactiveLinkStyle}>
+                                <BsFileText className="fs-5" /> Report
+                            </Link>
+                        )}
+                        
+                        {/* Admin Only */}
+                        {role === 'Admin' && (
+                            <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
+                                <BsTruck className="fs-5" /> Supplier
+                            </Link>
+                        )}
+                        
+                        {/* Admin & Manager */}
+                        {(role === 'Admin' || role === 'Manager') && (
+                            <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
+                                <BsArrowReturnLeft className="fs-5" /> Returns
+                            </Link>
+                        )}
+                        
+                        {/* Admin Only */}
+                        {role === 'Admin' && (
+                            <Link href={route('admin.employee')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.employee') ? activeLinkStyle : inactiveLinkStyle}>
+                                <IoPeople className="fs-5" /> Employee
+                            </Link>
+                        )}
+                        
+                        {/* Admin Only */}
+                        {role === 'Admin' && (
+                            <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
+                                <BsCashStack className="fs-5" /> Pay
+                            </Link>
+                        )}
+                        
+                        {/* Owner Only */}
+                        {role === 'Owner' && (
+                            <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
+                                <BsPersonCheck className="fs-5" /> Approvals
+                            </Link>
+                        )}
                     </nav>
 
                     <div className="d-flex flex-column align-items-center w-100 mt-4">
@@ -100,15 +132,24 @@ export default function AdminLayout({ children }) {
                             <Link href={route('admin.dashboard')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.dashboard') ? activeLinkStyle : inactiveLinkStyle}>
                                 <BsFillGridFill /> Dashboard
                             </Link>
-                            <Link href={route('admin.inventory')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.inventory') ? activeLinkStyle : inactiveLinkStyle}>
-                                <BsBoxSeam /> Inventory
-                            </Link>
-                            <Link href={route('admin.report')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.report') ? activeLinkStyle : inactiveLinkStyle}>
-                                <BsFileText /> Report
-                            </Link>
-                            <Link href={route('admin.employee')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.employee') ? activeLinkStyle : inactiveLinkStyle}>
-                                <IoPeople /> Employee
-                            </Link>
+                            
+                            {(role === 'Admin' || role === 'Manager') && (
+                                <Link href={route('admin.inventory')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.inventory') ? activeLinkStyle : inactiveLinkStyle}>
+                                    <BsBoxSeam /> Inventory
+                                </Link>
+                            )}
+                            
+                            {(role === 'Admin' || role === 'Owner') && (
+                                <Link href={route('admin.report')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.report') ? activeLinkStyle : inactiveLinkStyle}>
+                                    <BsFileText /> Report
+                                </Link>
+                            )}
+                            
+                            {role === 'Admin' && (
+                                <Link href={route('admin.employee')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.employee') ? activeLinkStyle : inactiveLinkStyle}>
+                                    <IoPeople /> Employee
+                                </Link>
+                            )}
                         </nav>
 
                         <div className="mt-4 pt-4 border-top d-flex flex-column align-items-center">

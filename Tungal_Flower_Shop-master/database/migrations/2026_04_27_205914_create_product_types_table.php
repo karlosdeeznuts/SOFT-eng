@@ -8,19 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('products', function (Blueprint $table) {
+        Schema::create('product_types', function (Blueprint $table) {
             $table->id();
-            $table->string('product_name');
-            $table->longText('description');
-            $table->integer('price');
-            $table->integer('stocks')->default(0);
-            $table->string('image')->nullable();
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->string('name'); // e.g., 'Bouquet', 'Dozen'
+            $table->integer('multiplier'); // e.g., 7, 12
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('products');
+        Schema::dropIfExists('product_types');
     }
 };

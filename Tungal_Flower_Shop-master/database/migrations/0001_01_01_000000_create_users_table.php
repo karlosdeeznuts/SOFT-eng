@@ -12,15 +12,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
+      Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('firstname',length:100);
-            $table->string('lastname',length:100);
-            $table->string('contact_number',length:11)->unique();
-            $table->string('role',length:50);
-            $table->string('username',length:100)->unique();
-            $table->string('password',length:100);
-            $table->string('profile');
+            $table->string('firstname', length: 100);
+            $table->string('lastname', length: 100);
+            $table->string('contact_number', length: 11)->unique();
+            $table->string('role', length: 50);
+            $table->string('address')->nullable(); // NEW
+            $table->date('hired_date')->nullable(); // NEW
+            $table->string('username', length: 100)->unique();
+            $table->string('password', length: 100);
+            $table->string('profile')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

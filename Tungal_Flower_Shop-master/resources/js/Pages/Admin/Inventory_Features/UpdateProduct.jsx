@@ -1,7 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
 import { Toaster, toast } from 'sonner';
-import { useEffect } from 'react';
 
 const UploadIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6C757D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -11,17 +10,33 @@ const UploadIcon = () => (
     </svg>
 );
 
-export default function AddProduct({ isOpen, onClose }) {
+export default function UpdateProduct({ isOpen, onClose, flower }) {
     const fileInputRef = useRef(null);
     const [imagePreview, setImagePreview] = useState(null);
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        image: null,
-        product_name: '', 
+        id: '',
+        image: '',
+        product_name: '',       
         description: '',
         price: '', 
         types: [], 
     });
+
+    useEffect(() => {
+        if (flower && isOpen) {
+            setData({
+                id: flower.id,
+                image: '', 
+                product_name: flower.product_name || '',
+                description: flower.description || '',
+                price: flower.price || '',
+                types: flower.types ? [...flower.types] : [], 
+            });
+            setImagePreview(flower.image ? `/storage/${flower.image}` : null);
+            clearErrors();
+        }
+    }, [flower, isOpen]);
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -29,12 +44,12 @@ export default function AddProduct({ isOpen, onClose }) {
         if (file) {
             setImagePreview(URL.createObjectURL(file)); 
         } else {
-            setImagePreview(null);
+            setImagePreview(flower?.image ? `/storage/${flower.image}` : null); 
         }
     };
 
     const addType = () => {
-        setData('types', [...data.types, { name: '', multiplier: 1 }]); // FIXED: name instead of type_name
+        setData('types', [...data.types, { name: '', multiplier: 1 }]);
     };
 
     const updateType = (index, field, value) => {
@@ -50,10 +65,9 @@ export default function AddProduct({ isOpen, onClose }) {
 
     function submit(e) {
         e.preventDefault();
-        post(route('inventory.storeProduct'), {
+        post(route('inventory.updateProduct'), {
+            preserveScroll: true,
             onSuccess: () => {
-                reset();
-                setImagePreview(null);
                 onClose();
             }
         });
@@ -67,13 +81,6 @@ export default function AddProduct({ isOpen, onClose }) {
     }, [flash]);
 
     if (!isOpen) return null;
-
-    const handleClose = () => {
-        reset();
-        setImagePreview(null);
-        clearErrors();
-        onClose();
-    };
 
     return (
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050, padding: '15px' }}>
@@ -95,7 +102,7 @@ export default function AddProduct({ isOpen, onClose }) {
                                 ) : (
                                     <>
                                         <UploadIcon />
-                                        <p className="text-muted mt-1 mb-0" style={{ fontSize: '12px' }}>Drag or Click to Upload Image</p>
+                                        <p className="text-muted mt-1 mb-0" style={{ fontSize: '12px' }}>Drag or Click to Upload New Image</p>
                                     </>
                                 )}
                             </div>
@@ -103,24 +110,24 @@ export default function AddProduct({ isOpen, onClose }) {
                             {errors.image && <div className="text-danger mt-1" style={{ fontSize: '12px' }}>{errors.image}</div>}
                         </div>
 
-                        <h4 className="fw-bold text-center mb-3">Add New Flower</h4>
+                        <h4 className="fw-bold text-center mb-3">Update Flower Details</h4>
 
                         <div className="row g-2">
                             <div className="col-md-6">
                                 <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Flower Name</label>
-                                <input type="text" className={`form-control form-control-sm ${errors.product_name ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} placeholder="e.g. Red Roses" value={data.product_name} onChange={(e) => setData('product_name', e.target.value)} />
+                                <input type="text" className={`form-control form-control-sm ${errors.product_name ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} value={data.product_name} onChange={(e) => setData('product_name', e.target.value)} />
                                 {errors.product_name && <div className="invalid-feedback">{errors.product_name}</div>}
                             </div>
 
                             <div className="col-md-6">
                                 <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Price Per Piece (₱)</label>
-                                <input type="number" className={`form-control form-control-sm ${errors.price ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} placeholder="0.00" value={data.price} onChange={(e) => setData('price', e.target.value)} />
+                                <input type="number" className={`form-control form-control-sm ${errors.price ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} value={data.price} onChange={(e) => setData('price', e.target.value)} />
                                 {errors.price && <div className="invalid-feedback">{errors.price}</div>}
                             </div>
 
                             <div className="col-12">
                                 <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Description</label>
-                                <textarea className={`form-control form-control-sm ${errors.description ? 'is-invalid' : ''}`} style={{ borderRadius: '8px', resize: 'none' }} rows="2" placeholder="Brief description..." value={data.description} onChange={(e) => setData('description', e.target.value)}></textarea>
+                                <textarea className={`form-control form-control-sm ${errors.description ? 'is-invalid' : ''}`} style={{ borderRadius: '8px', resize: 'none' }} rows="2" value={data.description} onChange={(e) => setData('description', e.target.value)}></textarea>
                                 {errors.description && <div className="invalid-feedback">{errors.description}</div>}
                             </div>
 
@@ -144,11 +151,12 @@ export default function AddProduct({ isOpen, onClose }) {
                                     </div>
                                 )}
                             </div>
+
                         </div>
 
                         <div className="d-flex justify-content-center gap-3 mt-4">
-                            <button type="button" onClick={handleClose} className="btn btn-sm fw-bold text-white px-4" style={{ backgroundColor: '#DC3545', borderRadius: '8px', minWidth: '120px', padding: '8px' }}>Cancel</button>
-                            <button type="submit" disabled={processing} className="btn btn-sm fw-bold text-white px-4" style={{ backgroundColor: '#28A745', borderRadius: '8px', minWidth: '120px', padding: '8px' }}>{processing ? 'Saving...' : 'Save Flower'}</button>
+                            <button type="button" onClick={onClose} className="btn btn-sm fw-bold text-white px-4" style={{ backgroundColor: '#DC3545', borderRadius: '8px', minWidth: '120px', padding: '8px' }}>Cancel</button>
+                            <button type="submit" disabled={processing} className="btn btn-sm fw-bold text-white px-4" style={{ backgroundColor: '#0D6EFD', borderRadius: '8px', minWidth: '120px', padding: '8px' }}>{processing ? 'Updating...' : 'Update'}</button>
                         </div>
                     </form>
                 </div>
