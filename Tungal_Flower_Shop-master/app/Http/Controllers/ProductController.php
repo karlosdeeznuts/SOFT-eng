@@ -13,7 +13,7 @@ class ProductController extends Controller
         return inertia('Admin/Inventory', ['products' => $products]);
     }
 
-    public function showProduct(){
+    public function displayProduct(){
         $products = Product::with('types')->latest()->paginate(8);
         return inertia('Customer/Product', ['products' => $products]);
     }
