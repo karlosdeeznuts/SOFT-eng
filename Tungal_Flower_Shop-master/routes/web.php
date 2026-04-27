@@ -17,72 +17,36 @@ Route::post('/authentication', [UserController::class,'authentication'])
 
 // --- DELIVERY PERSONNEL ROUTES ---
 Route::middleware(['auth', 'delivery'])->prefix('delivery')->group(function () {
-    
-    // 1. The List (Dashboard)
     Route::get('/dashboard', [App\Http\Controllers\OrderController::class, 'deliveryDashboard'])->name('delivery.dashboard');
-    
-    // 2. The Details Page
     Route::get('/orders/{id}', [App\Http\Controllers\OrderController::class, 'deliveryDetails'])->name('delivery.details');
-
-    // 3. The Upload Pages
     Route::get('/orders/{id}/confirm', [App\Http\Controllers\OrderController::class, 'showDeliveryForm'])->name('delivery.confirm.show');
     Route::post('/orders/{id}/confirm', [App\Http\Controllers\OrderController::class, 'storeDeliveryProof'])->name('delivery.confirm.store');
 });
 
-
 Route::middleware(['auth', EmployeeMiddleware::class])->group(function () {
 
     Route::get('/employee/deliveries', [App\Http\Controllers\OrderController::class, 'deliveriesList'])->name('employee.deliveries');
-
     Route::get('/orders/{id}/confirm-delivery', [App\Http\Controllers\OrderController::class, 'showDeliveryForm'])->name('orders.delivery_confirm.show');
     Route::post('/orders/{id}/confirm-delivery', [App\Http\Controllers\OrderController::class, 'storeDeliveryProof'])->name('orders.delivery_confirm.store');
 
-    
     // Product-Feature Routes
-    Route::get('/product', [ProductController::class,'displayProduct'])
-    ->name('customer.product');
-
-    Route::get('/product/showProduct/{product_id}', [ProductController::class,'showProduct'])
-    ->name('customer.showProduct');
-
-    // FIXED: Pointing this to CartController where our new POS logic lives
-    Route::post('/product/showProduct/addToCart', [CartController::class,'addToCart'])
-    ->name('customer.addToCart');
-
-    // ----------------------------------------------------------------------------
+    Route::get('/product', [ProductController::class,'displayProduct'])->name('customer.product');
+    Route::get('/product/showProduct/{product_id}', [ProductController::class,'showProduct'])->name('customer.showProduct');
+    Route::post('/product/showProduct/addToCart', [CartController::class,'addToCart'])->name('customer.addToCart'); // Pointed to CartController
 
     // Cart-Feature Routes
-    Route::get('/cart', [CartController::class,'cart'])
-    ->name('customer.cart');
-
-    // NOTE: Restored your original GET request for remove item
-    Route::get('/cart/removeItem/{cart_id}', [CartController::class,'removeItem'])
-    ->name('customer.removeItem');
-
-    Route::post('/cart/checkout', [CartController::class,'checkout'])
-    ->name('customer.checkout');
-
-    Route::get('/cart/checkout/invoice/{order_id}', [CartController::class,'invoice'])
-    ->name('customer.invoice');
-
-    // ----------------------------------------------------------------------------
+    Route::get('/cart', [CartController::class,'cart'])->name('customer.cart');
+    Route::get('/cart/removeItem/{cart_id}', [CartController::class,'removeItem'])->name('customer.removeItem');
+    Route::post('/cart/checkout', [CartController::class,'checkout'])->name('customer.checkout');
+    Route::get('/cart/checkout/invoice/{order_id}', [CartController::class,'invoice'])->name('customer.invoice');
 
     // Profile Routes
-    Route::get('/profile', [UserController::class,'customer_profile'])
-    ->name('customer.profile');
-
-    Route::post('/profile/updateProfileInfo',[UserController::class,'updateProfileInfo'])
-    ->name('customer.updateProfileInfo');
-
-    Route::post('/profile/updateProfilePassword',[UserController::class,'updateProfilePassword'])
-    ->name('customer.updateProfilePassword');
-
-     // ----------------------------------------------------------------------------
+    Route::get('/profile', [UserController::class,'customer_profile'])->name('customer.profile');
+    Route::post('/profile/updateProfileInfo',[UserController::class,'updateProfileInfo'])->name('customer.updateProfileInfo');
+    Route::post('/profile/updateProfilePassword',[UserController::class,'updateProfilePassword'])->name('customer.updateProfilePassword');
 
     Route::get('/orders', [OrderController::class,'orders'])->name('customer.orders');
-
-    Route::post('/employee/logout', [UserController::class,'employeeLogout'])
-    ->name('employee.logout');
+    Route::post('/employee/logout', [UserController::class,'employeeLogout'])->name('employee.logout');
 });
 
 require __DIR__ . '/admin.php';
