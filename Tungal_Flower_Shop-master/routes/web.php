@@ -4,94 +4,65 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\UserController;
-use App\Http\Middleware\AdminMiddleware;
-use App\Http\Middleware\EmployeeMiddleware;
 use Illuminate\Support\Facades\Route;
 
-// Route::middleware('guest')->group(function () {
-//     Route::get('/', function () {
-//         return inertia('Index');
-//     })->name('customer.index');
+Route::get('/', function () {
+    return inertia('Index');
+})->name('index');
 
-//     Route::post('/authentication', [UserController::class,'authentication'])
-//     ->name('customer.authentication');
-// });
+// LOGIN & AUTH ROUTES
+Route::post('/login/process', [UserController::class, 'loginProcess'])->name('login.process');
+Route::post('/logout', [UserController::class, 'logout'])->name('logout');
 
-    Route::get('/', function () {
-        return inertia('Index');
-    })->name('customer.index');
-
-    Route::post('/authentication', [UserController::class,'authentication'])
-    ->name('customer.authentication');
-
-    // --- DELIVERY PERSONNEL ROUTES ---
-Route::middleware(['auth', 'delivery'])->prefix('delivery')->group(function () {
+// ADMIN ROUTES
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/admin/dashboard', [UserController::class, 'dashboard'])->name('admin.dashboard');
     
-    // 1. The List (Dashboard)
-    Route::get('/dashboard', [App\Http\Controllers\OrderController::class, 'deliveryDashboard'])->name('delivery.dashboard');
+    // Inventory
+    Route::get('/admin/inventory', [ProductController::class, 'showInventoryProduct'])->name('admin.inventory');
+    Route::post('/admin/inventory/addProduct/store', [ProductController::class, 'storeProduct'])->name('inventory.storeProduct');
+    Route::post('/admin/inventory/updateProduct', [ProductController::class, 'updateProduct'])->name('inventory.updateProduct');
+    Route::delete('/admin/inventory/deleteProduct/{product}', [ProductController::class, 'destroyProduct'])->name('inventory.destroyProduct');
+    Route::post('/admin/inventory/stockIn', [ProductController::class, 'stockIn'])->name('inventory.stockIn');
+    Route::post('/admin/inventory/stockOut', [ProductController::class, 'stockOut'])->name('inventory.stockOut');
     
-    // 2. The Details Page (with the placeholder address)
-    Route::get('/orders/{id}', [App\Http\Controllers\OrderController::class, 'deliveryDetails'])->name('delivery.details');
-
-    // 3. The Upload Pages
-    Route::get('/orders/{id}/confirm', [App\Http\Controllers\OrderController::class, 'showDeliveryForm'])->name('delivery.confirm.show');
-    Route::post('/orders/{id}/confirm', [App\Http\Controllers\OrderController::class, 'storeDeliveryProof'])->name('delivery.confirm.store');
+    // Employees
+    Route::get('/admin/employee', [UserController::class, 'employee'])->name('admin.employee');
+    Route::post('/admin/employee/addEmployee/store', [UserController::class, 'storeEmployee'])->name('employee.storeEmployee');
+    Route::post('/admin/employee/updateEmployee', [UserController::class, 'updateEmployee'])->name('employee.updateEmployee');
+    Route::delete('/admin/employee/deleteEmployee/{user}', [UserController::class, 'destroyEmployee'])->name('employee.destroyEmployee');
     
+    // Admin Utility
+    Route::get('/admin/sales', function () { return inertia('Admin/Sales'); })->name('admin.sales');
+    Route::get('/admin/report', function () { return inertia('Admin/Report'); })->name('admin.report');
+    Route::get('/admin/profile', [UserController::class, 'showAdminProfile'])->name('admin.profile');
+    Route::post('/admin/profile/update', [UserController::class, 'updateAdminProfile'])->name('admin.updateProfile');
 });
 
-
-Route::middleware(['auth', EmployeeMiddleware::class])->group(function () {
-
-    Route::get('/employee/deliveries', [App\Http\Controllers\OrderController::class, 'deliveriesList'])->name('employee.deliveries');
-
-    Route::get('/orders/{id}/confirm-delivery', [App\Http\Controllers\OrderController::class, 'showDeliveryForm'])->name('orders.delivery_confirm.show');
-    Route::post('/orders/{id}/confirm-delivery', [App\Http\Controllers\OrderController::class, 'storeDeliveryProof'])->name('orders.delivery_confirm.store');
-
+// CASHIER (EMPLOYEE) ROUTES - THE NEW POS
+Route::middleware(['auth', 'employee'])->group(function () {
+    Route::get('/product', [ProductController::class, 'displayProduct'])->name('customer.product');
     
-    // Product-Feature Routes
-    Route::get('/product', [ProductController::class,'displayProduct'])
-    ->name('customer.product');
-
-    Route::get('/product/showProduct/{product_id}', [ProductController::class,'showProduct'])
-    ->name('customer.showProduct');
-
-    Route::post('/product/showProduct/addToCart', [ProductController::class,'addToCart'])
-    ->name('customer.addToCart');
-
-    // ----------------------------------------------------------------------------
-
-    // Cart-Feature Routes
-    Route::get('/cart', [CartController::class,'cart'])
-    ->name('customer.cart');
-
-    Route::get('/cart/removeItem/{cart_id}', [CartController::class,'removeItem'])
-    ->name('customer.removeItem');
-
-    Route::post('/cart/checkout', [CartController::class,'checkout'])
-    ->name('customer.checkout');
-
-    Route::get('/cart/checkout/invoice/{order_id}', [CartController::class,'invoice'])
-    ->name('customer.invoice');
-
-    // ----------------------------------------------------------------------------
-
-    // Profile Routes
-    Route::get('/profile', [UserController::class,'customer_profile'])
-    ->name('customer.profile');
-
-    Route::post('/profile/updateProfileInfo',[UserController::class,'updateProfileInfo'])
-    ->name('customer.updateProfileInfo');
-
-    Route::post('/profile/updateProfilePassword',[UserController::class,'updateProfilePassword'])
-    ->name('customer.updateProfilePassword');
-
-     // ----------------------------------------------------------------------------
-
-    Route::get('/orders', [OrderController::class,'orders'])->name('customer.orders');
-
-    Route::post('/employee/logout', [UserController::class,'employeeLogout'])
-    ->name('employee.logout');
+    // Cart & POS Actions
+    Route::get('/cart', [CartController::class, 'cart'])->name('customer.cart'); // Kept as backup/legacy
+    Route::post('/cart/add', [CartController::class, 'addToCart'])->name('cart.add'); // THE NEW ADD ACTION
+    Route::post('/cart/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
+    Route::delete('/cart/remove/{cart_id}', [CartController::class, 'removeItem'])->name('cart.remove');
+    
+    // Orders & Invoices
+    Route::get('/orders', [OrderController::class, 'orders'])->name('customer.orders');
+    Route::get('/invoice/{order_id}', [CartController::class, 'invoice'])->name('customer.invoice');
+    Route::get('/download-invoice/{order_id}', [CartController::class, 'downloadInvoice'])->name('admin.downloadInvoice');
+    
+    // Cashier Profile
+    Route::get('/profile', [UserController::class, 'showCustomerProfile'])->name('customer.profile');
+    Route::post('/profile/update', [UserController::class, 'updateCustomerProfile'])->name('customer.updateProfile');
 });
 
-
-require __DIR__ . '/admin.php';
+// DELIVERY ROUTES
+Route::middleware(['auth', 'delivery'])->group(function () {
+    Route::get('/delivery/dashboard', [OrderController::class, 'deliveryDashboard'])->name('delivery.dashboard');
+    Route::get('/delivery/details/{id}', [OrderController::class, 'deliveryDetails'])->name('delivery.details');
+    Route::get('/delivery/confirm/{id}', [OrderController::class, 'showDeliveryForm'])->name('delivery.confirm');
+    Route::post('/delivery/confirm/{id}', [OrderController::class, 'storeDeliveryProof'])->name('delivery.storeProof');
+});

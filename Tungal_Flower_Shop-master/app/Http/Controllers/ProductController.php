@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Cart;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -13,9 +14,21 @@ class ProductController extends Controller
         return inertia('Admin/Inventory', ['products' => $products]);
     }
 
+    // THE CASHIER POS RENDER
     public function displayProduct(){
+        // Load flowers with their quantifiers
         $products = Product::with('types')->latest()->paginate(8);
-        return inertia('Customer/Product', ['products' => $products]);
+        
+        // Eager load the cart so the right-hand panel is instantly ready
+        $user = auth()->user();
+        $carts = Cart::with('product')->where('user_id', $user->id)->latest()->get();
+        $cartTotal = Cart::where('user_id', $user->id)->sum('subtotal');
+
+        return inertia('Customer/Product', [
+            'products' => $products,
+            'carts' => $carts,
+            'cartTotal' => $cartTotal
+        ]);
     }
 
     public function storeProduct(Request $request){
@@ -44,7 +57,7 @@ class ProductController extends Controller
         if (!empty($fields['types'])) {
             foreach ($fields['types'] as $type) {
                 $product->types()->create([
-                    'name' => $type['name'], // FIXED: Matches your database column perfectly
+                    'name' => $type['name'],
                     'multiplier' => $type['multiplier']
                 ]);
             }
@@ -84,7 +97,7 @@ class ProductController extends Controller
             if (!empty($fields['types'])) {
                 foreach ($fields['types'] as $type) {
                     $product->types()->create([
-                        'name' => $type['name'], // FIXED: Matches your database column perfectly
+                        'name' => $type['name'],
                         'multiplier' => $type['multiplier']
                     ]);
                 }
