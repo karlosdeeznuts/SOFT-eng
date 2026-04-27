@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\OrderDetail;
+use App\Models\Attendance; // NEW: Brought in the Attendance Model
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -28,7 +29,6 @@ class UserController extends Controller
             if($user->role === 'Admin' || $user->role === 'Owner'){
                 return redirect()->intended('/admin/dashboard');
             }elseif($user->role === 'Manager' || $user->role === 'Cashier' || $user->role === 'Employee'){
-                // Managers and Cashiers both go to the POS/Product screen
                 return redirect()->intended('/product');
             }elseif($user->role === 'Delivery'){
                 return redirect()->intended('/delivery/dashboard');
@@ -86,18 +86,39 @@ class UserController extends Controller
         }
     }
 
-    // FIXED: Now queries for Manager and Cashier roles
     public function displayEmployee(){
         $employees = User::whereIn('role', ['Manager', 'Cashier', 'Employee'])->get();
         return inertia('Admin/Employee',['employees' => $employees]);
     }
 
     public function viewEmployeeProfile($user_id) {
-        // Eager load attendances so the UI placeholder has actual data later
+        // Sends the attendance history straight to the React frontend
         $employee_profile = User::with('attendances')->find($user_id);
         return inertia('Admin/Employee_Features/ViewProfile', [
             'user_info' => $employee_profile
         ]);
+    }
+
+    // THE NEW ATTENDANCE LOGIC
+    public function storeAttendance(Request $request) {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'date' => 'required|date',
+            'status' => 'required|string',
+            'clock_in' => 'nullable',
+            'clock_out' => 'nullable',
+        ]);
+
+        Attendance::updateOrCreate(
+            ['user_id' => $request->user_id, 'date' => $request->date],
+            [
+                'status' => $request->status,
+                'clock_in' => $request->clock_in,
+                'clock_out' => $request->clock_out
+            ]
+        );
+
+        return redirect()->back()->with('success', "Attendance updated successfully.");
     }
 
     public function updateUserInfo(Request $request){
@@ -200,7 +221,6 @@ class UserController extends Controller
     }
 
     public function sales($order_id = null){
-        // FIXED: Sales filter dropdown checks for exact roles
         $employees = User::whereIn('role', ['Manager', 'Cashier', 'Employee'])->get();
 
         if($order_id == null){

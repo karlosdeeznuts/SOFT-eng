@@ -44,78 +44,101 @@ const ArrowRight = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 19"></polyline></svg>
 );
 
-// Attendance Modal Component
-const AttendanceModal = ({ isOpen, onClose }) => {
+// Attendance Modal Component - NOW WIRED TO INERTIA
+const AttendanceModal = ({ isOpen, onClose, userId }) => {
     if (!isOpen) return null;
 
-    const [attendanceForm, setAttendanceForm] = useState({
-        date: '2025-04-28',
+    const { data, setData, post, processing, reset } = useForm({
+        user_id: userId,
+        date: new Date().toISOString().split('T')[0],
         status: 'On-Time',
-        clockIn: '07:11',
-        clockOut: '18:30'
+        clock_in: '',
+        clock_out: ''
     });
+
+    const submitAttendance = (e) => {
+        e.preventDefault();
+        post(route('employee.storeAttendance'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                onClose();
+                reset();
+            }
+        });
+    };
 
     return (
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050 }}>
             <div className="card shadow-lg border-0" style={{ borderRadius: '24px', width: '100%', maxWidth: '400px', backgroundColor: '#FFF' }}>
-                <div className="card-body p-4 p-md-5">
+                <form onSubmit={submitAttendance} className="card-body p-4 p-md-5">
                     <h3 className="fw-bolder text-center mb-4" style={{ color: '#1E1E1E' }}>Attendance</h3>
                     
                     <div className="d-flex align-items-center justify-content-center gap-3 mb-4">
-                        <span className="fw-medium text-dark" style={{ fontSize: '14px' }}>Attendance ID</span>
-                        <input type="text" className="form-control text-center shadow-none bg-light" value="01" readOnly style={{ width: '60px', borderRadius: '8px' }} />
+                        <span className="fw-medium text-dark" style={{ fontSize: '14px' }}>Employee ID</span>
+                        <input type="text" className="form-control text-center shadow-none bg-light" value={String(userId).padStart(2, '0')} readOnly style={{ width: '60px', borderRadius: '8px' }} />
                     </div>
 
                     <div className="row g-3 mb-4">
                         <div className="col-12 d-flex align-items-center gap-3">
                             <label className="mb-0 fw-medium text-dark" style={{ width: '80px', fontSize: '14px' }}>Date</label>
-                            <input type="date" className="form-control shadow-none flex-grow-1" value={attendanceForm.date} onChange={(e) => setAttendanceForm({...attendanceForm, date: e.target.value})} style={{ borderRadius: '8px' }} />
+                            <input type="date" className="form-control shadow-none flex-grow-1" value={data.date} onChange={(e) => setData('date', e.target.value)} required style={{ borderRadius: '8px' }} />
                         </div>
 
                         <div className="col-12 d-flex align-items-center gap-3">
                             <label className="mb-0 fw-medium text-dark" style={{ width: '80px', fontSize: '14px' }}>Status</label>
-                            <select className="form-select shadow-none flex-grow-1" value={attendanceForm.status} onChange={(e) => setAttendanceForm({...attendanceForm, status: e.target.value})} style={{ borderRadius: '8px' }}>
+                            <select className="form-select shadow-none flex-grow-1" value={data.status} onChange={(e) => setData('status', e.target.value)} style={{ borderRadius: '8px' }}>
                                 <option value="On-Time">On-Time</option>
                                 <option value="Late">Late</option>
                                 <option value="Overtime">Overtime</option>
+                                <option value="Absent">Absent</option>
                             </select>
                         </div>
 
                         <div className="col-12 d-flex align-items-center gap-3">
                             <label className="mb-0 fw-medium text-dark" style={{ width: '80px', fontSize: '14px' }}>Clock In</label>
                             <div className="d-flex flex-grow-1 gap-2">
-                                <input type="time" className="form-control shadow-none" value={attendanceForm.clockIn} onChange={(e) => setAttendanceForm({...attendanceForm, clockIn: e.target.value})} style={{ borderRadius: '8px' }} />
+                                <input type="time" className="form-control shadow-none" value={data.clock_in} onChange={(e) => setData('clock_in', e.target.value)} style={{ borderRadius: '8px' }} />
                             </div>
                         </div>
 
                         <div className="col-12 d-flex align-items-center gap-3">
                             <label className="mb-0 fw-medium text-dark" style={{ width: '80px', fontSize: '14px' }}>Clock Out</label>
                             <div className="d-flex flex-grow-1 gap-2">
-                                <input type="time" className="form-control shadow-none" value={attendanceForm.clockOut} onChange={(e) => setAttendanceForm({...attendanceForm, clockOut: e.target.value})} style={{ borderRadius: '8px' }} />
+                                <input type="time" className="form-control shadow-none" value={data.clock_out} onChange={(e) => setData('clock_out', e.target.value)} style={{ borderRadius: '8px' }} />
                             </div>
                         </div>
                     </div>
 
                     <div className="d-flex justify-content-between gap-3 mt-2">
-                        <button onClick={onClose} className="btn w-50 fw-bold text-white shadow-none" style={{ backgroundColor: '#DC3545', borderRadius: '8px', height: '45px' }}>Cancel</button>
-                        <button className="btn w-50 fw-bold text-white shadow-sm border-0" style={{ backgroundColor: '#758AF8', borderRadius: '8px', height: '45px' }}>Update</button>
+                        <button type="button" onClick={onClose} className="btn w-50 fw-bold text-white shadow-none" style={{ backgroundColor: '#DC3545', borderRadius: '8px', height: '45px' }}>Cancel</button>
+                        <button type="submit" disabled={processing} className="btn w-50 fw-bold text-white shadow-sm border-0" style={{ backgroundColor: '#758AF8', borderRadius: '8px', height: '45px' }}>
+                            {processing ? 'Saving...' : 'Update'}
+                        </button>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     );
 };
 
-// Notice we are correctly destructing user_info here now!
+// Formats 14:30:00 to 02:30 PM for the table
+const formatTime = (timeString) => {
+    if (!timeString) return '--:--';
+    const [hour, minute] = timeString.split(':');
+    const h = parseInt(hour, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${String(h12).padStart(2, '0')}:${minute} ${ampm}`;
+};
+
 export default function ViewProfile({ user_info }) {
     const route = useRoute();
     const targetData = user_info || {};
     const [activeTab, setActiveTab] = useState('details'); 
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Wired up Inertia form matching your UserController requirements
     const { data, setData, post, processing, errors } = useForm({
-        id: targetData.id || '', // Include ID for the backend update query
+        id: targetData.id || '',
         firstname: targetData.firstname || '',
         lastname: targetData.lastname || '',
         address: targetData.address || '', 
@@ -131,18 +154,10 @@ export default function ViewProfile({ user_info }) {
         if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
-    // Submit handler matching your route
     const handleSaveProfile = (e) => {
         e.preventDefault();
         post(route('employee.updateUserInfo'));
     };
-
-    // Mock Attendance Data 
-    const attendanceData = [
-        { id: '01', date: '05/08/2025', clockIn: '07:11 AM', clockOut: '06:30 PM', status: 'On-Time' },
-        { id: '02', date: '05/09/2025', clockIn: '08:00 AM', clockOut: '07:22 PM', status: 'Late' },
-        { id: '03', date: '05/13/2025', clockIn: '06:10 AM', clockOut: '05:10 PM', status: 'Overtime' },
-    ];
 
     return (
         <div className="container-fluid py-5 px-5" style={{ minHeight: '100vh', backgroundColor: '#F4F5FA', fontFamily: "'Poppins', sans-serif" }}>
@@ -302,7 +317,7 @@ export default function ViewProfile({ user_info }) {
                                 <table className="table table-borderless align-middle mb-0 text-center">
                                     <thead style={{ backgroundColor: '#EBEAEE', color: '#1E1E1E' }}>
                                         <tr>
-                                            <th className="py-3" style={{ fontSize: '14px' }}>Attendance ID</th>
+                                            <th className="py-3" style={{ fontSize: '14px' }}>No.</th>
                                             <th className="py-3" style={{ fontSize: '14px' }}>Date</th>
                                             <th className="py-3" style={{ fontSize: '14px' }}>Clock In</th>
                                             <th className="py-3" style={{ fontSize: '14px' }}>Clock Out</th>
@@ -311,31 +326,37 @@ export default function ViewProfile({ user_info }) {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {attendanceData.map((row, index) => (
-                                            <tr key={index} className="border-bottom">
-                                                <td className="fw-bold py-3">{row.id}</td>
-                                                <td className="py-3 text-muted">{row.date}</td>
-                                                <td className="py-3 text-muted">{row.clockIn}</td>
-                                                <td className="py-3 text-muted">{row.clockOut}</td>
-                                                <td className="py-3 text-dark">{row.status}</td>
-                                                <td className="py-3">
-                                                    <button onClick={() => setIsModalOpen(true)} className="btn btn-sm d-inline-flex align-items-center gap-2 fw-semibold text-white border-0 shadow-none px-3" style={{ backgroundColor: '#758AF8', borderRadius: '8px' }}>
-                                                        <ClockIcon /> Edit
-                                                    </button>
-                                                </td>
+                                        {user_info.attendances && user_info.attendances.length > 0 ? (
+                                            user_info.attendances.sort((a,b) => new Date(b.date) - new Date(a.date)).map((row, index) => (
+                                                <tr key={row.id} className="border-bottom">
+                                                    <td className="fw-bold py-3">{String(index + 1).padStart(2, '0')}</td>
+                                                    <td className="py-3 text-muted">{new Date(row.date).toLocaleDateString()}</td>
+                                                    <td className="py-3 text-muted">{formatTime(row.clock_in)}</td>
+                                                    <td className="py-3 text-muted">{formatTime(row.clock_out)}</td>
+                                                    <td className="py-3 fw-bold text-dark">{row.status}</td>
+                                                    <td className="py-3">
+                                                        <button onClick={() => setIsModalOpen(true)} className="btn btn-sm d-inline-flex align-items-center gap-2 fw-semibold text-white border-0 shadow-none px-3" style={{ backgroundColor: '#758AF8', borderRadius: '8px' }}>
+                                                            <ClockIcon /> Edit
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="6" className="text-center py-5 text-muted">No attendance records logged yet.</td>
                                             </tr>
-                                        ))}
+                                        )}
                                     </tbody>
                                 </table>
                                 
                                 <div className="d-flex justify-content-end align-items-center gap-3 py-3 pe-4" style={{ backgroundColor: '#EBEAEE' }}>
-                                    <span className="text-muted d-flex align-items-center gap-1 fw-medium" style={{ fontSize: '14px' }}>
+                                    <span className="text-muted d-flex align-items-center gap-1 fw-medium" style={{ fontSize: '14px', cursor: 'pointer' }}>
                                         <ArrowLeft /> Previous
                                     </span>
                                     <div className="d-flex justify-content-center align-items-center rounded-2 fw-bold text-white" style={{ width: '32px', height: '32px', backgroundColor: '#758AF8' }}>
                                         1
                                     </div>
-                                    <span className="text-muted d-flex align-items-center gap-1 fw-medium" style={{ fontSize: '14px' }}>
+                                    <span className="text-muted d-flex align-items-center gap-1 fw-medium" style={{ fontSize: '14px', cursor: 'pointer' }}>
                                         Next <ArrowRight />
                                     </span>
                                 </div>
@@ -350,7 +371,7 @@ export default function ViewProfile({ user_info }) {
                 </div>
             </div>
 
-            <AttendanceModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <AttendanceModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} userId={targetData.id} />
         </div>
     );
 }

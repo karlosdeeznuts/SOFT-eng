@@ -29,18 +29,15 @@ Route::middleware(['auth', EmployeeMiddleware::class])->group(function () {
     Route::get('/orders/{id}/confirm-delivery', [App\Http\Controllers\OrderController::class, 'showDeliveryForm'])->name('orders.delivery_confirm.show');
     Route::post('/orders/{id}/confirm-delivery', [App\Http\Controllers\OrderController::class, 'storeDeliveryProof'])->name('orders.delivery_confirm.store');
 
-    // Product-Feature Routes
     Route::get('/product', [ProductController::class,'displayProduct'])->name('customer.product');
     Route::get('/product/showProduct/{product_id}', [ProductController::class,'showProduct'])->name('customer.showProduct');
-    Route::post('/product/showProduct/addToCart', [CartController::class,'addToCart'])->name('customer.addToCart'); // Pointed to CartController
+    Route::post('/product/showProduct/addToCart', [CartController::class,'addToCart'])->name('customer.addToCart'); 
 
-    // Cart-Feature Routes
     Route::get('/cart', [CartController::class,'cart'])->name('customer.cart');
     Route::get('/cart/removeItem/{cart_id}', [CartController::class,'removeItem'])->name('customer.removeItem');
     Route::post('/cart/checkout', [CartController::class,'checkout'])->name('customer.checkout');
     Route::get('/cart/checkout/invoice/{order_id}', [CartController::class,'invoice'])->name('customer.invoice');
 
-    // Profile Routes
     Route::get('/profile', [UserController::class,'customer_profile'])->name('customer.profile');
     Route::post('/profile/updateProfileInfo',[UserController::class,'updateProfileInfo'])->name('customer.updateProfileInfo');
     Route::post('/profile/updateProfilePassword',[UserController::class,'updateProfilePassword'])->name('customer.updateProfilePassword');
@@ -49,4 +46,10 @@ Route::middleware(['auth', EmployeeMiddleware::class])->group(function () {
     Route::post('/employee/logout', [UserController::class,'employeeLogout'])->name('employee.logout');
 });
 
+// Admin group inclusion
 require __DIR__ . '/admin.php';
+
+// THE NEW ATTENDANCE ROUTE (Appended to the Admin level logic securely)
+Route::middleware(['auth', AdminMiddleware::class])->group(function () {
+    Route::post('/admin/employee/attendance', [UserController::class, 'storeAttendance'])->name('employee.storeAttendance');
+});
