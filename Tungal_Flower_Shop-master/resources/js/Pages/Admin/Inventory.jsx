@@ -3,7 +3,7 @@ import AdminLayout from '../../Layout/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { toast } from 'sonner';
 import AddProduct from './Inventory_Features/AddProduct'; 
-import UpdateProduct from './Inventory_Features/UpdateProduct'; // NEW IMPORT
+import UpdateProduct from './Inventory_Features/UpdateProduct';
 
 const SearchIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c757d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>);
 const PlusIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>);
@@ -33,10 +33,9 @@ function Inventory({ products }) {
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     
-    // NEW: Update Modal States
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
     const [flowerToUpdate, setFlowerToUpdate] = useState(null);
-    
+
     const [selectedFlower, setSelectedFlower] = useState(null);
 
     const productList = products?.data ? products.data : products || [];
@@ -46,7 +45,7 @@ function Inventory({ products }) {
         return (
             (prod.product_name && prod.product_name.toLowerCase().includes(term)) ||
             (prod.description && prod.description.toLowerCase().includes(term)) ||
-            (prod.type && prod.type.toLowerCase().includes(term))
+            (prod.types && prod.types.some(t => t.name.toLowerCase().includes(term))) // FIXED: using 'name'
         );
     });
 
@@ -84,9 +83,8 @@ function Inventory({ products }) {
         }
     };
 
-    // NEW: Trigger the Update Modal
     const openUpdateModal = (e, product) => {
-        e.stopPropagation(); // Prevents the row selection from triggering at the same time
+        e.stopPropagation(); 
         setFlowerToUpdate(product);
         setIsUpdateModalOpen(true);
     };
@@ -123,9 +121,9 @@ function Inventory({ products }) {
                             <tr>
                                 <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '10%' }}>ID</th>
                                 <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '28%' }}>Flower Details</th>
-                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '12%' }}>Type</th>
-                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '10%' }}>Quantity</th>
-                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '10%' }}>Price</th>
+                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '15%' }}>Quantifiers / Types</th>
+                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '8%' }}>Base Qty</th>
+                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '9%' }}>Price</th>
                                 <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '15%' }}>Last Updated</th>
                                 <th className="py-3 px-4 text-muted fw-semibold text-center" style={{ fontSize: '13px', width: '15%' }}>Action</th>
                             </tr>
@@ -168,11 +166,15 @@ function Inventory({ products }) {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="py-3 px-4 text-dark fw-medium" style={{ fontSize: '14px' }}>{product.type || '-'}</td>
+                                            <td className="py-3 px-4 text-dark fw-medium" style={{ fontSize: '12px' }}>
+                                                {product.types && product.types.length > 0 
+                                                    ? product.types.map(t => `${t.name} (x${t.multiplier})`).join(', ') // FIXED: using 'name'
+                                                    : <span className="text-muted fst-italic">Base Unit Only</span>}
+                                            </td>
                                             <td className="py-3 px-4">
                                                 <span className="fw-bold" style={{ fontSize: '14px', color: product.stocks > 0 ? '#1E1E1E' : '#DC3545' }}>{product.stocks || 0}</span>
                                             </td>
-                                            <td className="py-3 px-4 text-dark fw-bold" style={{ fontSize: '14px' }}>₱ {product.price}.00</td>
+                                            <td className="py-3 px-4 text-dark fw-bold" style={{ fontSize: '14px' }}>₱ {product.price}</td>
                                             
                                             <td className="py-3 px-4 text-muted fw-medium" style={{ fontSize: '13px' }}>
                                                 {formatLocalTime(product.updated_at)}
@@ -253,7 +255,6 @@ function Inventory({ products }) {
 
             <AddProduct isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
             
-            {/* NEW: Component rendering the Update modal */}
             <UpdateProduct isOpen={isUpdateModalOpen} onClose={() => setIsUpdateModalOpen(false)} flower={flowerToUpdate} />
         </div>
     );

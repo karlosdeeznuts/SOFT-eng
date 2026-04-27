@@ -17,22 +17,21 @@ export default function UpdateProduct({ isOpen, onClose, flower }) {
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         id: '',
         image: '',
-        product_name: '', 
-        type: '',         
+        product_name: '',       
         description: '',
         price: '', 
+        types: [], 
     });
 
-    // Load the flower data into the textboxes when the modal opens
     useEffect(() => {
         if (flower && isOpen) {
             setData({
                 id: flower.id,
-                image: '', // Keep empty so we don't submit an old file
+                image: '', 
                 product_name: flower.product_name || '',
-                type: flower.type || '',
                 description: flower.description || '',
                 price: flower.price || '',
+                types: flower.types ? [...flower.types] : [], 
             });
             setImagePreview(flower.image ? `/storage/${flower.image}` : null);
             clearErrors();
@@ -49,9 +48,25 @@ export default function UpdateProduct({ isOpen, onClose, flower }) {
         }
     };
 
+    const addType = () => {
+        setData('types', [...data.types, { name: '', multiplier: 1 }]);
+    };
+
+    const updateType = (index, field, value) => {
+        const newTypes = [...data.types];
+        newTypes[index][field] = value;
+        setData('types', newTypes);
+    };
+
+    const removeType = (index) => {
+        const newTypes = data.types.filter((_, i) => i !== index);
+        setData('types', newTypes);
+    };
+
     function submit(e) {
         e.preventDefault();
         post(route('inventory.updateProduct'), {
+            preserveScroll: true,
             onSuccess: () => {
                 onClose();
             }
@@ -74,16 +89,16 @@ export default function UpdateProduct({ isOpen, onClose, flower }) {
             <div className="card shadow-lg border-0" style={{ borderRadius: '16px', width: '100%', maxWidth: '550px', backgroundColor: '#FFF' }}>
                 <div className="card-body px-4 py-4">
                     <form onSubmit={submit}>
-                        {/* IMAGE SECTION */}
+                        
                         <div className="text-center mb-3">
                             <h6 className="fw-bold text-dark mb-2" style={{ fontSize: '14px' }}>Flower Image</h6>
                             <div 
-                                className="d-flex flex-column justify-content-center align-items-center mx-auto"
-                                style={{ border: '2px dashed #DADDE1', backgroundColor: '#F8F9FA', borderRadius: '10px', height: '90px', maxWidth: '300px', cursor: 'pointer' }}
+                                className="d-flex flex-column justify-content-center align-items-center mx-auto overflow-hidden"
+                                style={{ border: '2px dashed #DADDE1', backgroundColor: '#F8F9FA', borderRadius: '10px', height: '120px', maxWidth: '300px', cursor: 'pointer' }}
                                 onClick={() => fileInputRef.current.click()}
                             >
                                 {imagePreview ? (
-                                    <img src={imagePreview} alt="Preview" className="object-fit-cover rounded" style={{ height: '100%', width: '100%' }} />
+                                    <img src={imagePreview} alt="Preview" className="object-fit-cover w-100 h-100" />
                                 ) : (
                                     <>
                                         <UploadIcon />
@@ -98,20 +113,14 @@ export default function UpdateProduct({ isOpen, onClose, flower }) {
                         <h4 className="fw-bold text-center mb-3">Update Flower Details</h4>
 
                         <div className="row g-2">
-                            <div className="col-12">
+                            <div className="col-md-6">
                                 <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Flower Name</label>
                                 <input type="text" className={`form-control form-control-sm ${errors.product_name ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} value={data.product_name} onChange={(e) => setData('product_name', e.target.value)} />
                                 {errors.product_name && <div className="invalid-feedback">{errors.product_name}</div>}
                             </div>
 
                             <div className="col-md-6">
-                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Type</label>
-                                <input type="text" className={`form-control form-control-sm ${errors.type ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} value={data.type} onChange={(e) => setData('type', e.target.value)} />
-                                {errors.type && <div className="invalid-feedback">{errors.type}</div>}
-                            </div>
-
-                            <div className="col-md-6">
-                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Price (₱)</label>
+                                <label className="form-label text-muted mb-1" style={{ fontSize: '12px' }}>Price Per Piece (₱)</label>
                                 <input type="number" className={`form-control form-control-sm ${errors.price ? 'is-invalid' : ''}`} style={{ borderRadius: '8px' }} value={data.price} onChange={(e) => setData('price', e.target.value)} />
                                 {errors.price && <div className="invalid-feedback">{errors.price}</div>}
                             </div>
@@ -121,6 +130,28 @@ export default function UpdateProduct({ isOpen, onClose, flower }) {
                                 <textarea className={`form-control form-control-sm ${errors.description ? 'is-invalid' : ''}`} style={{ borderRadius: '8px', resize: 'none' }} rows="2" value={data.description} onChange={(e) => setData('description', e.target.value)}></textarea>
                                 {errors.description && <div className="invalid-feedback">{errors.description}</div>}
                             </div>
+
+                            <div className="col-12 mt-3">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <label className="form-label text-muted fw-bold mb-0" style={{ fontSize: '12px' }}>Custom Quantifiers (Types)</label>
+                                    <button type="button" onClick={addType} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#7859FF', fontSize: '11px', borderRadius: '6px' }}>+ Add Type</button>
+                                </div>
+                                
+                                {data.types.map((type, index) => (
+                                    <div key={index} className="d-flex gap-2 mb-2">
+                                        <input type="text" className="form-control form-control-sm shadow-none" style={{ borderRadius: '8px' }} placeholder="Type Name (e.g. Bouquet)" value={type.name} onChange={(e) => updateType(index, 'name', e.target.value)} required />
+                                        <input type="number" className="form-control form-control-sm shadow-none" style={{ borderRadius: '8px', width: '100px' }} placeholder="Qty" value={type.multiplier} onChange={(e) => updateType(index, 'multiplier', e.target.value)} required min="1" />
+                                        <button type="button" onClick={() => removeType(index)} className="btn btn-sm btn-light border-0 text-danger fw-bold" style={{ borderRadius: '8px' }}>X</button>
+                                    </div>
+                                ))}
+
+                                {data.types.length === 0 && (
+                                    <div className="text-muted text-center p-2" style={{ fontSize: '12px', backgroundColor: '#F8F9FA', borderRadius: '8px' }}>
+                                        No custom types added. This flower will be sold as a single base unit.
+                                    </div>
+                                )}
+                            </div>
+
                         </div>
 
                         <div className="d-flex justify-content-center gap-3 mt-4">
