@@ -18,9 +18,9 @@ class Product extends Model
         'image'
     ];
 
-    // Automatically format the timestamps for the React frontend
+    // Let Laravel send the raw global timestamp. React will format it locally.
     protected $casts = [
-        'created_at' => 'datetime:M d, Y h:i A',
-        'updated_at' => 'datetime:M d, Y h:i A',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 }

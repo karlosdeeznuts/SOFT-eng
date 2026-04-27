@@ -3,7 +3,6 @@ import AdminLayout from '../../Layout/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { toast } from 'sonner';
 import AddProduct from './Inventory_Features/AddProduct'; 
-// UpdateProduct import is paused for now
 
 const SearchIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c757d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>);
 const PlusIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>);
@@ -12,6 +11,20 @@ const ArrowRight = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="
 const UpdateIcon = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>);
 const DeleteIcon = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>);
 const CheckCircle = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="#7859FF" stroke="#7859FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" fill="none"></path><polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" fill="none"></polyline></svg>);
+
+// THE BULLETPROOF FIX: Forces the browser to calculate the local time natively
+const formatLocalTime = (dateString) => {
+    if (!dateString) return 'Just Now';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+};
 
 function Inventory({ products }) {
     const [searchQuery, setSearchQuery] = useState('');
@@ -101,7 +114,6 @@ function Inventory({ products }) {
                                 <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '12%' }}>Type</th>
                                 <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '10%' }}>Quantity</th>
                                 <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '10%' }}>Price</th>
-                                {/* NEW DATE COLUMN */}
                                 <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '15%' }}>Last Updated</th>
                                 <th className="py-3 px-4 text-muted fw-semibold text-center" style={{ fontSize: '13px', width: '15%' }}>Action</th>
                             </tr>
@@ -150,9 +162,9 @@ function Inventory({ products }) {
                                             </td>
                                             <td className="py-3 px-4 text-dark fw-bold" style={{ fontSize: '14px' }}>₱ {product.price}.00</td>
                                             
-                                            {/* NEW RENDERED DATE */}
+                                            {/* RENDERED LOCALLY VIA BROWSER CLOCK */}
                                             <td className="py-3 px-4 text-muted fw-medium" style={{ fontSize: '13px' }}>
-                                                {product.updated_at ? product.updated_at : 'Just Now'}
+                                                {formatLocalTime(product.updated_at)}
                                             </td>
 
                                             <td className="py-3 px-4">
