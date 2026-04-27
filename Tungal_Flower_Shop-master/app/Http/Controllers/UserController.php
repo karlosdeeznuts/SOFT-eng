@@ -6,11 +6,11 @@ use App\Models\User;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\OrderDetail;
+use App\Models\Attendance; // NEW: Brought in the Attendance Model
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
@@ -18,31 +18,19 @@ class UserController extends Controller
     {
         $credentials = $request->validate([
             'username' => 'required',
-            'password' => [
-                'required',
-                'string',
-                Password::min(8) 
-                    ->letters()
-                    ->mixedCase()
-                    ->numbers()
-                    ->symbols(),
-            ],
+            'password' => 'required|string',
         ]);
 
-        if(auth()->attempt($credentials)){
+        if(Auth::attempt($credentials)){
             $request->session()->regenerate();
 
-            $user = auth()->user(); 
+            $user = Auth::user(); 
 
-            // Group the shared dashboard roles together
-            if ($user->role === 'Admin' || $user->role === 'Manager' || $user->role === 'Owner') {
-                return redirect()->route('admin.dashboard');
-            } 
-            // Employee is now Cashier, routing to the POS
-            elseif ($user->role === 'Cashier') {
-                return redirect()->route('customer.product');
-            } 
-            elseif (strtolower($user->role) === 'delivery') {
+            if($user->role === 'Admin' || $user->role === 'Owner'){
+                return redirect()->intended('/admin/dashboard');
+            }elseif($user->role === 'Manager' || $user->role === 'Cashier' || $user->role === 'Employee'){
+                return redirect()->intended('/product');
+            }elseif($user->role === 'Delivery'){
                 return redirect()->intended('/delivery/dashboard');
             }
             
@@ -75,26 +63,18 @@ class UserController extends Controller
     
     public function storeEmployeeData(Request $request){
         $fields = $request->validate([
-        'firstname' => 'required|max:50',
-        'lastname' => 'required|max:50',
-        'contact_number' => 'required|min:11|max:11|unique:users,contact_number',
-        'role' => 'required',
-        'username' => 'required|unique:users,username',
-        'password' => [
-            'required',
-            'string',
-            Password::min(8)
-                ->letters()
-                ->mixedCase()
-                ->numbers()
-                ->symbols(),
-        ],
-        'profile' => 'required|file|mimes:jpg,jpeg,png|max:5120'
-    ]);
+            'firstname' => 'required|max:50',
+            'lastname' => 'required|max:50',
+            'contact_number' => 'required|min:11|max:11|unique:users,contact_number',
+            'role' => 'required',
+            'username' => 'required|unique:users,username',
+            'password' => 'required|string|min:8',
+            'profile' => 'required|file|mimes:jpg,jpeg,png|max:5120'
+        ]);
 
-    $fields['password'] = Hash::make($fields['password']);
+        $fields['password'] = Hash::make($fields['password']);
 
-    if($request->hasFile('profile')){
+        if($request->hasFile('profile')){
             $fields['profile'] = Storage::disk('public')->put('profiles',$request->profile);
             $user = User::create($fields);
 
@@ -107,15 +87,38 @@ class UserController extends Controller
     }
 
     public function displayEmployee(){
-        $employees = User::where('role','Employee')->get();
+        $employees = User::whereIn('role', ['Manager', 'Cashier', 'Employee'])->get();
         return inertia('Admin/Employee',['employees' => $employees]);
     }
 
     public function viewEmployeeProfile($user_id) {
-        $employee_profile = User::find($user_id);
+        // Sends the attendance history straight to the React frontend
+        $employee_profile = User::with('attendances')->find($user_id);
         return inertia('Admin/Employee_Features/ViewProfile', [
             'user_info' => $employee_profile
         ]);
+    }
+
+    // THE NEW ATTENDANCE LOGIC
+    public function storeAttendance(Request $request) {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'date' => 'required|date',
+            'status' => 'required|string',
+            'clock_in' => 'nullable',
+            'clock_out' => 'nullable',
+        ]);
+
+        Attendance::updateOrCreate(
+            ['user_id' => $request->user_id, 'date' => $request->date],
+            [
+                'status' => $request->status,
+                'clock_in' => $request->clock_in,
+                'clock_out' => $request->clock_out
+            ]
+        );
+
+        return redirect()->back()->with('success', "Attendance updated successfully.");
     }
 
     public function updateUserInfo(Request $request){
@@ -146,157 +149,87 @@ class UserController extends Controller
             ]);
 
             if($data){
-                return redirect()->route('employee.viewProfile',['user_id' => $request->id])
-                ->with('success',$field['firstname' ] . ' information update successfully.');
+                return redirect()->route('employee.viewProfile', ['user_id' => $request->id])
+                ->with('success', $field['firstname'] . ' information updated successfully.');
             }else{
-                return redirect()->back()-with('error','User info failed to update.');
+                return redirect()->back()->with('error','User info failed to update.');
             }
         }
     }
 
     public function updatePassword(Request $request){
         $fields = $request->validate([
-            'new_password' => [
-            'required',
-            'string',
-            Password::min(8)
-                ->letters()
-                ->mixedCase()
-                ->numbers()
-                ->symbols(),
-        ],
-        'confirm_password' => [
-            'required',
-            'string',
-            Password::min(8)
-                ->letters()
-                ->mixedCase()
-                ->numbers()
-                ->symbols(),
-        ],
+            'new_password' => 'required|string|min:8',
+            'confirm_password' => 'required|string|same:new_password',
         ]);
 
-        if($fields['new_password'] === $fields['confirm_password']){
-            $fields['new_password'] = Hash::make($fields['new_password']);
-            $user = User::where('id',$request->id)->update(['password' =>  $fields['new_password']]);
+        $fields['new_password'] = Hash::make($fields['new_password']);
+        $user = User::where('id',$request->id)->update(['password' =>  $fields['new_password']]);
 
-            if($user){
-                return redirect()->route('employee.viewProfile',['user_id' => $request->id])
-                ->with('success','Password update successfully.');
-            }else{
-                return redirect()->back()-with('error','Updating password failed.');
-            }
+        if($user){
+            return redirect()->route('employee.viewProfile',['user_id' => $request->id])
+            ->with('success','Password updated successfully.');
+        }else{
+            return redirect()->back()->with('error','Updating password failed.');
         }
     }
 
     public function adminProfile(){
         $user = auth()->user(); 
-        $admin = User::find($user);
-
-        if($admin){
-            return inertia('Admin/Profile',['admin' => $admin]);
+        if($user){
+            return inertia('Admin/Profile',['admin' => $user]);
         }
     }
 
     public function updateAdminInfo(Request $request){
-        if($request->contact_number !== null){
-            $existingContacts = User::where('contact_number',$request->contact_number)->first();
-            if($existingContacts !== null){
-                if($existingContacts->id == $request->id){
-                    $field = $request->validate([
-                        'firstname' => 'required',
-                        'lastname' => 'required',
-                        'contact_number' => 'required|min:11|max:11',
-                        'username' => 'required',
-                    ]);
-                }else{
-                    $field = $request->validate([
-                        'firstname' => 'required',
-                        'lastname' => 'required',
-                        'contact_number' => 'required|min:11|max:11|unique:users,contact_number',
-                        'username' => 'required',
-                    ]);
-                }   
-            }else{
-                $field = $request->validate([
-                    'firstname' => 'required',
-                    'lastname' => 'required',
-                    'contact_number' => 'required|min:11|max:11|unique:users,contact_number',
-                    'username' => 'required',
-                ]);
-            }
+        $field = $request->validate([
+            'firstname' => 'required',
+            'lastname' => 'required',
+            'contact_number' => 'required|min:11|max:11',
+            'username' => 'required',
+        ]);
+
+        $data = User::where('id',$request->id)->update([
+            'firstname' => $request->firstname,
+            'lastname' => $request->lastname,
+            'contact_number' => $request->contact_number,
+            'username' => $request->username,
+        ]);
+
+        if($data){
+            return redirect()->route('admin.profile')
+            ->with('success', 'Profile updated successfully.');
         }else{
-            $field = $request->validate([
-                'firstname' => 'required',
-                'lastname' => 'required',
-                'contact_number' => 'required|min:11|max:11|unique:users,contact_number',
-                'username' => 'required',
-            ]);
+            return redirect()->back()->with('error','Admin info failed to update.');
         }
-
-        if($field){
-                $data = User::where('id',$request->id)->update([
-                    'firstname' => $request->firstname,
-                    'lastname' => $request->lastname,
-                    'contact_number' => $request->contact_number,
-                    'username' => $request->username,
-                ]);
-
-                if($data){
-                    return redirect()->route('admin.profile')
-                    ->with('success',$field['firstname' ] . ' information update successfully.');
-                }else{
-                    return redirect()->back()-with('error','Admin info failed to update.');
-                }
-            }
     }
 
     public function updateAdminPassword(Request $request){
         $fields = $request->validate([
-            'new_password' => [
-            'required',
-            'string',
-            Password::min(8)
-                ->letters()
-                ->mixedCase()
-                ->numbers()
-                ->symbols(),
-        ],
-        'confirm_password' => [
-            'required',
-            'string',
-            Password::min(8)
-                ->letters()
-                ->mixedCase()
-                ->numbers()
-                ->symbols(),
-        ],
+            'new_password' => 'required|string|min:8',
+            'confirm_password' => 'required|string|same:new_password',
         ]);
 
-        if($fields['new_password'] === $fields['confirm_password']){
-            $fields['new_password'] = Hash::make($fields['new_password']);
-            $user = User::where('id',$request->id)->update(['password' =>  $fields['new_password']]);
+        $user = User::where('id',$request->id)->update(['password' =>  Hash::make($fields['new_password'])]);
 
-            if($user){
-                return redirect()->route('admin.profile',['user_id' => $request->id])
-                ->with('success','Password update successfully.');
-            }else{
-                return redirect()->back()-with('error','Updating password failed.');
-            }
+        if($user){
+            return redirect()->route('admin.profile')
+            ->with('success','Password updated successfully.');
+        }else{
+            return redirect()->back()->with('error','Updating password failed.');
         }
     }
 
-    // --- SALES FIX: FETCHING PARENT ORDER FOR DELIVERY PHOTO ---
     public function sales($order_id = null){
-        $employees = User::where('role','Employee')->get();
+        $employees = User::whereIn('role', ['Manager', 'Cashier', 'Employee'])->get();
 
         if($order_id == null){
-            $order_id = OrderDetail::select('order_id')->distinct()->latest()->get();
+            $order_id_list = OrderDetail::select('order_id')->distinct()->latest()->get();
             $orders = Order::latest()->paginate(12);
 
             return inertia('Admin/Sales',[
                 'employees' => $employees,
-                'order_id' => $order_id,
+                'order_id' => $order_id_list,
                 'orders' => $orders,
                 'currentSelected_ID' => 'All',
                 'parent_order' => null
@@ -316,26 +249,25 @@ class UserController extends Controller
     }
 
     public function selectedEmployee($user_id){
+        $employees = User::whereIn('role', ['Manager', 'Cashier', 'Employee'])->get();
         if($user_id != 'All'){
-            $employees = User::where('role','Employee')->get();
-            $order_id = OrderDetail::select('order_id')->where('user_id',$user_id)->distinct()->latest()->get();
+            $order_id_list = OrderDetail::select('order_id')->where('user_id',$user_id)->distinct()->latest()->get();
             $orders = Order::where('user_id',$user_id)->latest()->paginate(12);
 
             return inertia('Admin/Sales',[
                 'employees' => $employees,
-                'order_id' => $order_id,
+                'order_id' => $order_id_list,
                 'orders' => $orders,
                 'currentSelected_ID' => $user_id,
                 'parent_order' => null
             ]);
         }else{
-            $employees = User::where('role','Employee')->get();
-            $order_id = OrderDetail::select('order_id')->distinct()->latest()->get();
+            $order_id_list = OrderDetail::select('order_id')->distinct()->latest()->get();
             $orders = Order::latest()->paginate(12);
 
             return inertia('Admin/Sales',[
                 'employees' => $employees,
-                'order_id' => $order_id,
+                'order_id' => $order_id_list,
                 'orders' => $orders,
                 'currentSelected_ID' => 'All',
                 'parent_order' => null
@@ -346,29 +278,13 @@ class UserController extends Controller
     public function searchedOrderID(Request $request){
         $rawId = $request->input('order_id');
         $cleanId = preg_replace('/\D+/', '', $rawId);
-        $request->merge(['order_id' => (int) $cleanId]);
-    
-        $employees = User::where('role','Employee')->get();
-        $order_id = OrderDetail::select('order_id')->where('order_id',$request->order_id)->distinct()->first();
-
-        if($order_id == null){
-            $order_id = OrderDetail::select('order_id')->distinct()->latest()->get();
-            $orders = Order::latest()->paginate(12);
-
-            return inertia('Admin/Sales',[
-                'employees' => $employees,
-                'order_id' => $order_id,
-                'orders' => $orders,
-                'currentSelected_ID' => 'All',
-                'parent_order' => null
-            ]);
-        }
-
-        $orders = Order::where('id',$request->order_id)->latest()->paginate(12);
+        
+        $employees = User::whereIn('role', ['Manager', 'Cashier', 'Employee'])->get();
+        $orders = Order::where('id', $cleanId)->latest()->paginate(12);
 
         return inertia('Admin/Sales',[
             'employees' => $employees,
-            'order_id' => $order_id,
+            'order_id' => [],
             'orders' => $orders,
             'currentSelected_ID' => 'All',
             'parent_order' => null
@@ -383,106 +299,42 @@ class UserController extends Controller
         return redirect()->route('customer.index');
     }
 
-    // Customer Functions
     public function customer_profile(){
-        $user = auth()->user();
-        $customer_profile = User::find($user->id);
-
+        $user = Auth::user();
         return inertia('Customer/Profile', [
-            'user_info' => $customer_profile
+            'user_info' => $user
         ]);
     }
 
     public function updateProfileInfo(Request $request){
-        if($request->contact_number !== null){
-            $existingContacts = User::where('contact_number',$request->contact_number)->first();
+        $user = Auth::user();
+        $request->validate([
+            'firstname' => 'required',
+            'lastname' => 'required',
+            'contact_number' => 'required|min:11|max:11',
+            'username' => 'required',
+        ]);
 
-            if($existingContacts !== null){
-                if($existingContacts->id == $request->id){
-                    $field = $request->validate([
-                        'firstname' => 'required',
-                        'lastname' => 'required',
-                        'contact_number' => 'required|min:11|max:11',
-                        'username' => 'required',
-                    ]);
-                }else{
-                    $field = $request->validate([
-                        'firstname' => 'required',
-                        'lastname' => 'required',
-                        'contact_number' => 'required|min:11|max:11|unique:users,contact_number',
-                        'username' => 'required',
-                    ]);
-                }   
-            }else{
-                $field = $request->validate([
-                    'firstname' => 'required',
-                    'lastname' => 'required',
-                    'contact_number' => 'required|min:11|max:11|unique:users,contact_number',
-                    'username' => 'required',
-                ]);
-            }
+        $user->update([
+            'firstname' => $request->firstname,
+            'lastname' => $request->lastname,
+            'contact_number' => $request->contact_number,
+            'username' => $request->username,
+        ]);
 
-        }else{
-            $field = $request->validate([
-                'firstname' => 'required',
-                'lastname' => 'required',
-                'contact_number' => 'required|min:11|max:11|unique:users,contact_number',
-                'username' => 'required',
-            ]);
-        }
-
-        if($field){
-            $data = User::where('id',$request->id)->update([
-                'firstname' => $request->firstname,
-                'lastname' => $request->lastname,
-                'contact_number' => $request->contact_number,
-                'username' => $request->username,
-            ]);
-
-            if($data){
-                return redirect()->route('customer.profile')
-                ->with('success',$field['firstname' ] . ' information update successfully.');
-            }else{
-                return redirect()->back()-with('error','User info failed to update.');
-            }
-        }
+        return redirect()->route('customer.profile')->with('success', 'Information updated successfully.');
     }
 
     public function updateProfilePassword(Request $request){
-        $fields = $request->validate([
-            'new_password' => [
-            'required',
-            'string',
-            Password::min(8)
-                ->letters()
-                ->mixedCase()
-                ->numbers()
-                ->symbols(),
-        ],
-        'confirm_password' => [
-            'required',
-            'string',
-            Password::min(8)
-                ->letters()
-                ->mixedCase()
-                ->numbers()
-                ->symbols(),
-        ],
+        $request->validate([
+            'new_password' => 'required|string|min:8',
+            'confirm_password' => 'required|string|same:new_password',
         ]);
 
-        if($fields['new_password'] === $fields['confirm_password']){
-            $fields['new_password'] = Hash::make($fields['new_password']);
+        Auth::user()->update([
+            'password' => Hash::make($request->new_password),
+        ]);
 
-            $user = User::where('id',$request->id)->update([
-                'password' =>  $fields['new_password'],
-            ]);
-
-            if($user){
-                return redirect()->route('customer.profile')
-                ->with('success','Password update successfully.');
-            }else{
-                return redirect()->back()-with('error','Updating password failed.');
-            }
-        }
+        return redirect()->route('customer.profile')->with('success', 'Password updated successfully.');
     }
 }
