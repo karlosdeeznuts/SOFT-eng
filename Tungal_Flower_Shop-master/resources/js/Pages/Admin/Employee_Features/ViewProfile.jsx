@@ -44,16 +44,33 @@ const ArrowRight = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 19"></polyline></svg>
 );
 
-// Attendance Modal Component - NOW WIRED TO INERTIA
-const AttendanceModal = ({ isOpen, onClose, userId }) => {
+// Formats 14:30:00 to 02:30 PM for the table
+const formatTime = (timeString) => {
+    if (!timeString) return '--:--';
+    const [hour, minute] = timeString.split(':');
+    const h = parseInt(hour, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${String(h12).padStart(2, '0')}:${minute} ${ampm}`;
+};
+
+// Formats DB time (07:11:00) to Input time (07:11)
+const formatTimeForInput = (timeString) => {
+    if (!timeString) return '';
+    return timeString.substring(0, 5);
+};
+
+// Attendance Modal Component
+const AttendanceModal = ({ isOpen, onClose, userId, existingRecord }) => {
     if (!isOpen) return null;
 
+    // INJECTED: If an existingRecord is passed (Edit), populate the form. Otherwise, use defaults (Add).
     const { data, setData, post, processing, reset } = useForm({
         user_id: userId,
-        date: new Date().toISOString().split('T')[0],
-        status: 'On-Time',
-        clock_in: '',
-        clock_out: ''
+        date: existingRecord ? existingRecord.date : new Date().toISOString().split('T')[0],
+        status: existingRecord ? existingRecord.status : 'On-Time',
+        clock_in: existingRecord ? formatTimeForInput(existingRecord.clock_in) : '',
+        clock_out: existingRecord ? formatTimeForInput(existingRecord.clock_out) : ''
     });
 
     const submitAttendance = (e) => {
@@ -62,7 +79,6 @@ const AttendanceModal = ({ isOpen, onClose, userId }) => {
             preserveScroll: true,
             onSuccess: () => {
                 onClose();
-                reset();
             }
         });
     };
@@ -71,7 +87,9 @@ const AttendanceModal = ({ isOpen, onClose, userId }) => {
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050 }}>
             <div className="card shadow-lg border-0" style={{ borderRadius: '24px', width: '100%', maxWidth: '400px', backgroundColor: '#FFF' }}>
                 <form onSubmit={submitAttendance} className="card-body p-4 p-md-5">
-                    <h3 className="fw-bolder text-center mb-4" style={{ color: '#1E1E1E' }}>Attendance</h3>
+                    <h3 className="fw-bolder text-center mb-4" style={{ color: '#1E1E1E' }}>
+                        {existingRecord ? 'Edit Attendance' : 'Attendance'}
+                    </h3>
                     
                     <div className="d-flex align-items-center justify-content-center gap-3 mb-4">
                         <span className="fw-medium text-dark" style={{ fontSize: '14px' }}>Employee ID</span>
@@ -81,7 +99,15 @@ const AttendanceModal = ({ isOpen, onClose, userId }) => {
                     <div className="row g-3 mb-4">
                         <div className="col-12 d-flex align-items-center gap-3">
                             <label className="mb-0 fw-medium text-dark" style={{ width: '80px', fontSize: '14px' }}>Date</label>
-                            <input type="date" className="form-control shadow-none flex-grow-1" value={data.date} onChange={(e) => setData('date', e.target.value)} required style={{ borderRadius: '8px' }} />
+                            <input 
+                                type="date" 
+                                className="form-control shadow-none flex-grow-1" 
+                                value={data.date} 
+                                onChange={(e) => setData('date', e.target.value)} 
+                                required 
+                                style={{ borderRadius: '8px' }} 
+                                readOnly={!!existingRecord} // Lock the date if editing so they don't accidentally update a different day
+                            />
                         </div>
 
                         <div className="col-12 d-flex align-items-center gap-3">
@@ -121,21 +147,14 @@ const AttendanceModal = ({ isOpen, onClose, userId }) => {
     );
 };
 
-// Formats 14:30:00 to 02:30 PM for the table
-const formatTime = (timeString) => {
-    if (!timeString) return '--:--';
-    const [hour, minute] = timeString.split(':');
-    const h = parseInt(hour, 10);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12 = h % 12 || 12;
-    return `${String(h12).padStart(2, '0')}:${minute} ${ampm}`;
-};
-
 export default function ViewProfile({ user_info }) {
     const route = useRoute();
     const targetData = user_info || {};
     const [activeTab, setActiveTab] = useState('details'); 
+    
+    // MODAL STATES
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingRecord, setEditingRecord] = useState(null); // Tells the modal which row we are editing
 
     const { data, setData, post, processing, errors } = useForm({
         id: targetData.id || '',
@@ -335,7 +354,11 @@ export default function ViewProfile({ user_info }) {
                                                     <td className="py-3 text-muted">{formatTime(row.clock_out)}</td>
                                                     <td className="py-3 fw-bold text-dark">{row.status}</td>
                                                     <td className="py-3">
-                                                        <button onClick={() => setIsModalOpen(true)} className="btn btn-sm d-inline-flex align-items-center gap-2 fw-semibold text-white border-0 shadow-none px-3" style={{ backgroundColor: '#758AF8', borderRadius: '8px' }}>
+                                                        {/* EDIT BUTTON: Now correctly sets the record before opening the modal */}
+                                                        <button onClick={() => {
+                                                            setEditingRecord(row);
+                                                            setIsModalOpen(true);
+                                                        }} className="btn btn-sm d-inline-flex align-items-center gap-2 fw-semibold text-white border-0 shadow-none px-3" style={{ backgroundColor: '#758AF8', borderRadius: '8px' }}>
                                                             <ClockIcon /> Edit
                                                         </button>
                                                     </td>
@@ -362,7 +385,11 @@ export default function ViewProfile({ user_info }) {
                                 </div>
                             </div>
 
-                            <button onClick={() => setIsModalOpen(true)} className="btn d-inline-flex align-items-center gap-2 fw-semibold text-white px-4 rounded-3 shadow-sm border-0" style={{ backgroundColor: '#7859FF', height: '42px', fontSize: '14px' }}>
+                            {/* ADD BUTTON: Clears the existing record so it opens fresh */}
+                            <button onClick={() => {
+                                setEditingRecord(null);
+                                setIsModalOpen(true);
+                            }} className="btn d-inline-flex align-items-center gap-2 fw-semibold text-white px-4 rounded-3 shadow-sm border-0" style={{ backgroundColor: '#7859FF', height: '42px', fontSize: '14px' }}>
                                 <ClockIcon /> Add Attendance
                             </button>
                         </div>
@@ -371,7 +398,15 @@ export default function ViewProfile({ user_info }) {
                 </div>
             </div>
 
-            <AttendanceModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} userId={targetData.id} />
+            <AttendanceModal 
+                isOpen={isModalOpen} 
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingRecord(null);
+                }} 
+                userId={targetData.id} 
+                existingRecord={editingRecord} 
+            />
         </div>
     );
 }
