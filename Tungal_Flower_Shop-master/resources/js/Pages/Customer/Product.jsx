@@ -17,7 +17,6 @@ export default function Product({ products, carts, cartTotal }) {
     const [discountPercentage, setDiscountPercentage] = useState('');
     const [cashReceived, setCashReceived] = useState('');
 
-    // --- Toast Notifications ---
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
@@ -28,10 +27,8 @@ export default function Product({ products, carts, cartTotal }) {
     const grandTotal = cartTotal - discountAmount;
     const change = cashReceived ? (Number(cashReceived) - grandTotal) : 0;
 
-    // --- Action: Open Add to Cart ---
     const openAddModal = (flower) => {
         setSelectedFlower(flower);
-        // Default to first custom type, or inject a base unit if none exist
         if (flower.types && flower.types.length > 0) {
             setSelectedType(flower.types[0]);
         } else {
@@ -41,9 +38,10 @@ export default function Product({ products, carts, cartTotal }) {
         setIsAddModalOpen(true);
     };
 
+    // ALIGNED TO YOUR ROUTE NAME
     const handleAddToCart = (e) => {
         e.preventDefault();
-        router.post(route('cart.add'), {
+        router.post(route('customer.addToCart'), {
             product_id: selectedFlower.id,
             type_name: selectedType.name,
             multiplier: selectedType.multiplier,
@@ -55,14 +53,14 @@ export default function Product({ products, carts, cartTotal }) {
         });
     };
 
-    // --- Action: Complete Checkout ---
+    // ALIGNED TO YOUR ROUTE NAME
     const handleCheckout = (e) => {
         e.preventDefault();
         if (Number(cashReceived) < grandTotal) {
             toast.error("Cash received is less than Grand Total!");
             return;
         }
-        router.post(route('cart.checkout'), {
+        router.post(route('customer.checkout'), {
             cart_id: carts.map(c => c.id),
             total: grandTotal,
             cash_received: cashReceived,
@@ -74,8 +72,9 @@ export default function Product({ products, carts, cartTotal }) {
         });
     };
 
+    // ALIGNED TO YOUR ROUTE NAME (GET REQUEST)
     const removeCartItem = (id) => {
-        router.delete(route('cart.remove', id), { preserveScroll: true });
+        router.get(route('customer.removeItem', id), { preserveScroll: true });
     };
 
     return (
@@ -86,7 +85,7 @@ export default function Product({ products, carts, cartTotal }) {
             <div className="container-fluid px-4 pt-4">
                 <div className="row g-4">
                     
-                    {/* LEFT SIDE: FLOWER CATALOG (70%) */}
+                    {/* LEFT SIDE: FLOWER CATALOG */}
                     <div className="col-lg-8">
                         <div className="d-flex justify-content-between align-items-center mb-3">
                             <h3 className="fw-bolder m-0" style={{ color: '#1E1E1E' }}>Shop Products</h3>
@@ -120,7 +119,6 @@ export default function Product({ products, carts, cartTotal }) {
                             )}
                         </div>
 
-                        {/* Pagination */}
                         <div className="d-flex justify-content-center mt-4">
                             {products.links && products.links.map((link, index) => (
                                 <Link 
@@ -128,16 +126,13 @@ export default function Product({ products, carts, cartTotal }) {
                                     href={link.url} 
                                     className={`btn btn-sm mx-1 ${link.active ? 'btn-primary' : 'btn-light text-dark'}`}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
-                                    style={{ 
-                                        backgroundColor: link.active ? '#7859FF' : '#FFF', 
-                                        borderColor: link.active ? '#7859FF' : '#DEE2E6' 
-                                    }}
+                                    style={{ backgroundColor: link.active ? '#7859FF' : '#FFF', borderColor: link.active ? '#7859FF' : '#DEE2E6' }}
                                 />
                             ))}
                         </div>
                     </div>
 
-                    {/* RIGHT SIDE: ACTIVE CART & REGISTER (30%) */}
+                    {/* RIGHT SIDE: ACTIVE CART & REGISTER */}
                     <div className="col-lg-4">
                         <div className="card border-0 shadow-sm rounded-4 h-100 d-flex flex-column" style={{ backgroundColor: '#FFF', position: 'sticky', top: '20px', maxHeight: '90vh' }}>
                             
@@ -146,7 +141,6 @@ export default function Product({ products, carts, cartTotal }) {
                                 <span className="badge rounded-pill" style={{ backgroundColor: '#7859FF', fontSize: '13px' }}>{carts.length} Items</span>
                             </div>
 
-                            {/* Cart List */}
                             <div className="p-3 flex-grow-1 overflow-auto" style={{ backgroundColor: '#FCFCFC' }}>
                                 {carts && carts.length > 0 ? (
                                     carts.map(cart => (
@@ -172,7 +166,6 @@ export default function Product({ products, carts, cartTotal }) {
                                 )}
                             </div>
 
-                            {/* Math & Checkout Section */}
                             <div className="p-4 border-top" style={{ backgroundColor: '#FFF', borderBottomLeftRadius: '16px', borderBottomRightRadius: '16px' }}>
                                 
                                 <div className="mb-3">
@@ -222,7 +215,6 @@ export default function Product({ products, carts, cartTotal }) {
                 </div>
             </div>
 
-            {/* MODAL 1: ADD TO CART */}
             {isAddModalOpen && selectedFlower && (
                 <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.6)', zIndex: 1050 }}>
                     <div className="card shadow-lg border-0 rounded-4" style={{ width: '100%', maxWidth: '450px', backgroundColor: '#FFF' }}>
@@ -279,7 +271,6 @@ export default function Product({ products, carts, cartTotal }) {
                 </div>
             )}
 
-            {/* MODAL 2: CHECKOUT & PAYMENT */}
             {isPaymentModalOpen && (
                 <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.7)', zIndex: 1050 }}>
                     <div className="card shadow-lg border-0 rounded-4" style={{ width: '100%', maxWidth: '400px', backgroundColor: '#FFF' }}>
