@@ -13,9 +13,14 @@ class ProductController extends Controller
         return inertia('Admin/Inventory', ['products' => $products]);
     }
 
-    public function showProduct(){
+    public function displayProduct(){
         $products = Product::with('types')->latest()->paginate(8);
         return inertia('Customer/Product', ['products' => $products]);
+    }
+
+    public function showProduct($product_id){
+        $product = Product::with('types')->find($product_id);
+        return inertia('Customer/Product_Features/ShowProduct', ['product' => $product]);
     }
 
     public function storeProduct(Request $request){
@@ -44,7 +49,7 @@ class ProductController extends Controller
         if (!empty($fields['types'])) {
             foreach ($fields['types'] as $type) {
                 $product->types()->create([
-                    'name' => $type['name'], // FIXED: Matches your database column perfectly
+                    'name' => $type['name'],
                     'multiplier' => $type['multiplier']
                 ]);
             }
@@ -84,7 +89,7 @@ class ProductController extends Controller
             if (!empty($fields['types'])) {
                 foreach ($fields['types'] as $type) {
                     $product->types()->create([
-                        'name' => $type['name'], // FIXED: Matches your database column perfectly
+                        'name' => $type['name'],
                         'multiplier' => $type['multiplier']
                     ]);
                 }
