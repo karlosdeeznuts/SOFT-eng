@@ -56,26 +56,32 @@ class ProductController extends Controller
 
     public function updateProduct(Request $request){
         $fields = $request->validate([
+            'id' => 'required|integer',
             'product_name' => 'required',
             'type' => 'required|string',
             'description' => 'required',
-            'wholesale_price' => 'nullable|numeric',
-            'price' => 'required',
-            'stocks' => 'required|integer',
+            'price' => 'required|integer',
+            'image' => 'nullable|file|mimes:jpg,jpeg,png|max:5120'
         ]);
 
-        $product = Product::where('id',$request->id)->update([
-            'product_name' => $fields['product_name'],
-            'type' => $fields['type'],
-            'description' => $fields['description'],
-            'wholesale_price' => $fields['wholesale_price'],
-            'price' => $fields['price'],
-            'stocks' => $fields['stocks'],
-        ]);
+        $product = Product::find($request->id);
 
         if($product){
-            return redirect()->route('inventory.viewProduct',['product_id' => $request->id])
-            ->with('success',$fields['product_name'] . ' updated successfully.');
+            $updateData = [
+                'product_name' => $fields['product_name'],
+                'type' => $fields['type'],
+                'description' => $fields['description'],
+                'price' => $fields['price'],
+            ];
+
+            // Only update the image if a brand new one was uploaded
+            if($request->hasFile('image')){
+                $updateData['image'] = \Illuminate\Support\Facades\Storage::disk('public')->put('products', $request->image);
+            }
+
+            $product->update($updateData);
+
+            return redirect()->back()->with('success', $fields['product_name'] . ' updated successfully.');
         }else{
             return redirect()->back()->with('error','Updating flower information failed.');
         }
