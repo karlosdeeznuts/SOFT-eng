@@ -3,6 +3,7 @@ import AdminLayout from '../../Layout/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { toast } from 'sonner';
 import AddProduct from './Inventory_Features/AddProduct'; 
+// UpdateProduct import is paused for now
 
 const SearchIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c757d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>);
 const PlusIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>);
@@ -10,7 +11,6 @@ const ArrowLeft = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="n
 const ArrowRight = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 19"></polyline></svg>);
 const UpdateIcon = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>);
 const DeleteIcon = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>);
-// Added a checkmark icon to make the selected row pop even more
 const CheckCircle = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="#7859FF" stroke="#7859FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" fill="none"></path><polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" fill="none"></polyline></svg>);
 
 function Inventory({ products }) {
@@ -19,8 +19,6 @@ function Inventory({ products }) {
     const ITEMS_PER_PAGE = 5;
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    
-    // Row Selection Mechanic
     const [selectedFlower, setSelectedFlower] = useState(null);
 
     const productList = products?.data ? products.data : products || [];
@@ -40,7 +38,6 @@ function Inventory({ products }) {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const displayedProducts = filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-    // --- STOCK ADJUSTMENT LOGIC ---
     const handleStockIn = () => {
         const qty = window.prompt(`How many stocks to ADD for ${selectedFlower.product_name}?`);
         if (qty) {
@@ -96,15 +93,17 @@ function Inventory({ products }) {
 
             <div className="card shadow-sm border-0 w-100 overflow-hidden mb-4" style={{ borderRadius: '16px', backgroundColor: '#FFF' }}>
                 <div className="table-responsive">
-                    <table className="table table-borderless align-middle mb-0" style={{ minWidth: '900px' }}>
+                    <table className="table table-borderless align-middle mb-0" style={{ minWidth: '1000px' }}>
                         <thead style={{ backgroundColor: '#F8F9FA', borderBottom: '2px solid #EBEAEE' }}>
                             <tr>
-                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '12%' }}>Flower ID</th>
-                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '33%' }}>Flower Details</th>
-                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '15%' }}>Type</th>
+                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '10%' }}>ID</th>
+                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '28%' }}>Flower Details</th>
+                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '12%' }}>Type</th>
                                 <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '10%' }}>Quantity</th>
-                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '14%' }}>Price</th>
-                                <th className="py-3 px-4 text-muted fw-semibold text-center" style={{ fontSize: '13px', width: '16%' }}>Action</th>
+                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '10%' }}>Price</th>
+                                {/* NEW DATE COLUMN */}
+                                <th className="py-3 px-4 text-muted fw-semibold" style={{ fontSize: '13px', width: '15%' }}>Last Updated</th>
+                                <th className="py-3 px-4 text-muted fw-semibold text-center" style={{ fontSize: '13px', width: '15%' }}>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -120,13 +119,12 @@ function Inventory({ products }) {
                                                 cursor: 'pointer',
                                                 backgroundColor: isSelected ? '#F4F1FF' : 'transparent',
                                                 transition: 'all 0.2s ease',
-                                                boxShadow: isSelected ? 'inset 4px 0 0 0 #7859FF' : 'none' // THE INDICATOR STRIPE
+                                                boxShadow: isSelected ? 'inset 4px 0 0 0 #7859FF' : 'none' 
                                             }} 
                                             className="border-bottom position-relative"
                                         >
                                             <td className="py-3 px-4">
                                                 <div className="d-flex align-items-center gap-2">
-                                                    {/* Checkmark appears when selected */}
                                                     <div style={{ width: '18px' }}>
                                                         {isSelected ? <CheckCircle /> : null}
                                                     </div>
@@ -142,7 +140,7 @@ function Inventory({ products }) {
                                                     </div>
                                                     <div>
                                                         <h6 className="fw-bold mb-0 text-dark" style={{ fontSize: '14px' }}>{product.product_name}</h6>
-                                                        <p className="text-muted mb-0 text-truncate" style={{ fontSize: '12px', maxWidth: '220px' }}>{product.description || 'No description provided'}</p>
+                                                        <p className="text-muted mb-0 text-truncate" style={{ fontSize: '12px', maxWidth: '200px' }}>{product.description || 'No description provided'}</p>
                                                     </div>
                                                 </div>
                                             </td>
@@ -151,11 +149,21 @@ function Inventory({ products }) {
                                                 <span className="fw-bold" style={{ fontSize: '14px', color: product.stocks > 0 ? '#1E1E1E' : '#DC3545' }}>{product.stocks || 0}</span>
                                             </td>
                                             <td className="py-3 px-4 text-dark fw-bold" style={{ fontSize: '14px' }}>₱ {product.price}.00</td>
+                                            
+                                            {/* NEW RENDERED DATE */}
+                                            <td className="py-3 px-4 text-muted fw-medium" style={{ fontSize: '13px' }}>
+                                                {product.updated_at ? product.updated_at : 'Just Now'}
+                                            </td>
+
                                             <td className="py-3 px-4">
                                                 <div className="d-flex justify-content-center gap-2">
-                                                    <Link href={route('inventory.viewProduct', { product_id: product.id })} className="btn btn-sm d-inline-flex align-items-center gap-1 fw-semibold shadow-none border-0" onClick={(e) => e.stopPropagation()} style={{ backgroundColor: '#EBF0FF', color: '#7859FF', borderRadius: '6px', fontSize: '12px', padding: '6px 10px' }}>
+                                                    <button 
+                                                        className="btn btn-sm d-inline-flex align-items-center gap-1 fw-semibold shadow-none border-0" 
+                                                        onClick={(e) => { e.stopPropagation(); toast.info("Update logic is currently paused!"); }} 
+                                                        style={{ backgroundColor: '#EBF0FF', color: '#7859FF', borderRadius: '6px', fontSize: '12px', padding: '6px 10px' }}
+                                                    >
                                                         <UpdateIcon /> Update
-                                                    </Link>
+                                                    </button>
                                                     <button className="btn btn-sm d-inline-flex align-items-center gap-1 fw-semibold shadow-none border-0" onClick={(e) => e.stopPropagation()} style={{ backgroundColor: '#FFEBEE', color: '#DC3545', borderRadius: '6px', fontSize: '12px', padding: '6px 10px' }}>
                                                         <DeleteIcon /> Delete
                                                     </button>
@@ -165,7 +173,7 @@ function Inventory({ products }) {
                                     )
                                 })
                             ) : (
-                                <tr><td colSpan="6" className="text-center py-5 text-muted">No flowers found in inventory.</td></tr>
+                                <tr><td colSpan="7" className="text-center py-5 text-muted">No flowers found in inventory.</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -194,18 +202,13 @@ function Inventory({ products }) {
                 )}
             </div>
 
-            {/* WIRED STOCK BUTTONS - NOW FULLY DISABLED UNTIL A ROW IS CLICKED */}
             <div className="d-flex flex-column align-items-end gap-2 mt-3">
                 <div className="d-flex gap-3">
                     <button 
                         onClick={handleStockIn}
                         disabled={!selectedFlower}
                         className="btn fw-bold text-white shadow-sm border-0 transition-all d-flex justify-content-center align-items-center" 
-                        style={{ 
-                            backgroundColor: selectedFlower ? '#28A745' : '#A5D8B3', 
-                            cursor: selectedFlower ? 'pointer' : 'not-allowed',
-                            borderRadius: '8px', height: '44px', width: '150px', fontSize: '15px' 
-                        }}
+                        style={{ backgroundColor: selectedFlower ? '#28A745' : '#A5D8B3', cursor: selectedFlower ? 'pointer' : 'not-allowed', borderRadius: '8px', height: '44px', width: '150px', fontSize: '15px' }}
                     >
                         + Stock In
                     </button>
@@ -213,11 +216,7 @@ function Inventory({ products }) {
                         onClick={handleStockOut}
                         disabled={!selectedFlower}
                         className="btn fw-bold text-white shadow-sm border-0 transition-all d-flex justify-content-center align-items-center" 
-                        style={{ 
-                            backgroundColor: selectedFlower ? '#DC3545' : '#EAA9AF', 
-                            cursor: selectedFlower ? 'pointer' : 'not-allowed',
-                            borderRadius: '8px', height: '44px', width: '150px', fontSize: '15px' 
-                        }}
+                        style={{ backgroundColor: selectedFlower ? '#DC3545' : '#EAA9AF', cursor: selectedFlower ? 'pointer' : 'not-allowed', borderRadius: '8px', height: '44px', width: '150px', fontSize: '15px' }}
                     >
                         - Stock Out
                     </button>
