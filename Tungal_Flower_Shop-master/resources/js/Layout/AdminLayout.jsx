@@ -80,9 +80,9 @@ export default function AdminLayout({ children }) {
                             </Link>
                         )}
                         
-                        {/* Admin Only */}
+                        {/* Admin Only - NOW WIRED */}
                         {role === 'Admin' && (
-                            <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
+                            <Link href={route('admin.payroll')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.payroll') ? activeLinkStyle : inactiveLinkStyle}>
                                 <BsCashStack className="fs-5" /> Pay
                             </Link>
                         )}
@@ -148,6 +148,13 @@ export default function AdminLayout({ children }) {
                             {role === 'Admin' && (
                                 <Link href={route('admin.employee')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.employee') ? activeLinkStyle : inactiveLinkStyle}>
                                     <IoPeople /> Employee
+                                </Link>
+                            )}
+
+                            {/* ADDED: Mobile Pay Route */}
+                            {role === 'Admin' && (
+                                <Link href={route('admin.payroll')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.payroll') ? activeLinkStyle : inactiveLinkStyle}>
+                                    <BsCashStack /> Pay
                                 </Link>
                             )}
                         </nav>

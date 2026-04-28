@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Head } from '@inertiajs/react';
-// FIXED IMPORT PATH
+// FIXED IMPORT PATH: Only two levels up
 import AdminLayout from '../../Layout/AdminLayout';
 
 // --- CUSTOM ICONS ---
