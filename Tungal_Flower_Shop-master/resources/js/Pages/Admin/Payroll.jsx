@@ -37,51 +37,42 @@ const ArrowRight = () => (
     </svg>
 );
 
-// --- THE DETAILED CREATE PAYROLL MODAL ---
+// --- EMPLOYEE DATALIST (Used for Editable Text + Dropdown) ---
+const EmployeeDataList = () => (
+    <datalist id="employeeOptions">
+        <option value="01 - Admin Main" />
+        <option value="02 - Manager Main" />
+        <option value="03 - Cashier Main" />
+    </datalist>
+);
+
+// --- CREATE MODAL (Blue Button) ---
 const CreatePayrollModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     const { data, setData, reset } = useForm({
-        payroll_id: '02',
-        employee_id: '02',
-        payroll_date: '2025-04-28',
+        payroll_id: '03',
+        employee_id: '',
+        payroll_date: '',
         salary_method: 'Cash',
-        // Regular and Overtime Pay
-        rate: '450',
-        num_days: '5',
-        regular_ot: '420',
-        total_ot_pay: '1420',
-        ecola: '500',
-        allowance: '200',
-        other_pay: '250',
-        gross_pay: '5000',
-        // Employee Contribution
-        sss: '750',
-        sss_loan: '1000',
-        philhealth: '500',
-        withholding_tax: '400',
-        pagibig_fund: '200',
-        pagibig_loan: '800',
-        deduction: '3650',
-        other_deduction: '150',
-        total_deduction: '3800',
-        net_pay: '1240'
+        rate: '', num_days: '', regular_ot: '', total_ot_pay: '', ecola: '', allowance: '', other_pay: '', gross_pay: '',
+        sss: '', sss_loan: '', philhealth: '', withholding_tax: '', pagibig_fund: '', pagibig_loan: '', deduction: '', other_deduction: '', total_deduction: '', net_pay: ''
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log("Detailed Payroll Submitted:", data);
+        console.log("Create Payroll Submitted:", data);
         onClose();
         reset();
     };
 
     return (
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050 }}>
+            <EmployeeDataList />
             <div className="card shadow-lg border-0 overflow-hidden" style={{ borderRadius: '24px', width: '100%', maxWidth: '850px', backgroundColor: '#FFF', maxHeight: '95vh', overflowY: 'auto' }}>
-                <form onSubmit={handleSubmit} className="card-body p-4"> {/* FIXED: Removed extreme top/bottom padding */}
+                <form onSubmit={handleSubmit} className="card-body p-4">
                     <h2 className="fw-bolder text-center mb-4" style={{ color: '#1E1E1E' }}>Create Payroll</h2>
                     
-                    {/* Top Header Row */}
                     <div className="row g-3 mb-4">
                         <div className="col-md-6 d-flex align-items-center gap-3">
                             <span className="fw-medium text-dark" style={{ fontSize: '14px', minWidth: '90px' }}>Payroll ID</span>
@@ -89,15 +80,11 @@ const CreatePayrollModal = ({ isOpen, onClose }) => {
                         </div>
                         <div className="col-md-6 d-flex align-items-center gap-3">
                             <span className="fw-medium text-dark" style={{ fontSize: '14px', minWidth: '90px' }}>Employee ID</span>
-                            <select className="form-select shadow-none flex-grow-1" value={data.employee_id} onChange={(e) => setData('employee_id', e.target.value)} style={{ borderRadius: '8px', border: '1px solid #DEE2E6' }}>
-                                <option value="01">01 - Admin Main</option>
-                                <option value="02">02 - Manager Main</option>
-                                <option value="03">03 - Cashier Main</option>
-                            </select>
+                            <input type="text" list="employeeOptions" className="form-control shadow-none flex-grow-1" placeholder="Type or select..." value={data.employee_id} onChange={(e) => setData('employee_id', e.target.value)} required style={{ borderRadius: '8px', border: '1px solid #DEE2E6' }} />
                         </div>
                         <div className="col-md-6 d-flex align-items-center gap-3">
                             <span className="fw-medium text-dark" style={{ fontSize: '14px', minWidth: '90px' }}>Payroll Date</span>
-                            <input type="date" className="form-control shadow-none flex-grow-1" value={data.payroll_date} onChange={(e) => setData('payroll_date', e.target.value)} style={{ borderRadius: '8px', border: '1px solid #DEE2E6' }} />
+                            <input type="date" className="form-control shadow-none flex-grow-1" value={data.payroll_date} onChange={(e) => setData('payroll_date', e.target.value)} required style={{ borderRadius: '8px', border: '1px solid #DEE2E6' }} />
                         </div>
                         <div className="col-md-6 d-flex align-items-center gap-3">
                             <span className="fw-medium text-dark" style={{ fontSize: '14px', minWidth: '90px', whiteSpace: 'nowrap' }}>Salary Method</span>
@@ -108,161 +95,77 @@ const CreatePayrollModal = ({ isOpen, onClose }) => {
                         </div>
                     </div>
 
-                    {/* Two Column Layout */}
                     <div className="row g-4 mb-2">
-                        {/* Left Column: Regular and Overtime Pay */}
+                        {/* Left Column */}
                         <div className="col-md-6">
                             <div className="text-center py-2 mb-3 rounded-top" style={{ backgroundColor: '#D8D8DF' }}>
                                 <h6 className="fw-bold m-0 text-muted" style={{ color: '#5A637A' }}>Regular and Overtime Pay</h6>
                             </div>
-                            
                             <div className="d-flex flex-column gap-2">
-                                <div className="d-flex align-items-center">
-                                    <span className="fw-medium text-dark" style={{ width: '100px', fontSize: '14px' }}>Rate</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0" value={data.rate} onChange={(e) => setData('rate', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
+                                {/* Regular & OT Inputs */}
+                                {['rate', 'num_days', 'regular_ot', 'total_ot_pay'].map((field) => (
+                                    <div className="d-flex align-items-center" key={field}>
+                                        <span className="fw-medium text-dark text-capitalize" style={{ width: '100px', fontSize: '14px' }}>{field.replace(/_/g, ' ')}</span>
+                                        {field === 'num_days' ? (
+                                            <input type="number" className="form-control shadow-none" value={data[field]} onChange={(e) => setData(field, e.target.value)} style={{ borderRadius: '8px' }} />
+                                        ) : (
+                                            <div className="input-group">
+                                                <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
+                                                <input type="number" className={`form-control shadow-none border-start-0 ${field === 'total_ot_pay' ? 'fw-bold' : ''}`} value={data[field]} onChange={(e) => setData(field, e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                                <div className="d-flex align-items-center">
-                                    <span className="fw-medium text-dark" style={{ width: '100px', fontSize: '14px' }}># of Days</span>
-                                    <input type="number" className="form-control shadow-none" value={data.num_days} onChange={(e) => setData('num_days', e.target.value)} style={{ borderRadius: '8px' }} />
-                                </div>
-                                <div className="d-flex align-items-center">
-                                    <span className="fw-medium text-dark" style={{ width: '100px', fontSize: '14px' }}>Regular OT</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0" value={data.regular_ot} onChange={(e) => setData('regular_ot', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
-                                    </div>
-                                </div>
-                                <div className="d-flex align-items-center mt-1 mb-2">
-                                    <span className="fw-bolder text-dark" style={{ width: '100px', fontSize: '14px' }}>Total OT<br/>Pay</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0 fw-bold" value={data.total_ot_pay} onChange={(e) => setData('total_ot_pay', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
-                                    </div>
-                                </div>
+                                ))}
                                 <hr className="my-1 border-light" />
-                                <div className="d-flex align-items-center">
-                                    <span className="fw-medium text-dark" style={{ width: '100px', fontSize: '14px' }}>ECOLA</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0" value={data.ecola} onChange={(e) => setData('ecola', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
+                                {/* Allowances Inputs */}
+                                {['ecola', 'allowance', 'other_pay', 'gross_pay'].map((field) => (
+                                    <div className="d-flex align-items-center" key={field}>
+                                        <span className={`fw-medium text-dark text-capitalize ${field === 'gross_pay' ? 'fw-bolder' : ''}`} style={{ width: '100px', fontSize: '14px' }}>{field.replace(/_/g, ' ')}</span>
+                                        <div className="input-group">
+                                            <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
+                                            <input type="number" className={`form-control shadow-none border-start-0 ${field === 'gross_pay' ? 'fw-bold' : ''}`} value={data[field]} onChange={(e) => setData(field, e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="d-flex align-items-center">
-                                    <span className="fw-medium text-dark" style={{ width: '100px', fontSize: '14px' }}>Allowance</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0" value={data.allowance} onChange={(e) => setData('allowance', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
-                                    </div>
-                                </div>
-                                <div className="d-flex align-items-center">
-                                    <span className="fw-medium text-dark" style={{ width: '100px', fontSize: '14px' }}>Other Pay</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0" value={data.other_pay} onChange={(e) => setData('other_pay', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
-                                    </div>
-                                </div>
-                                <div className="d-flex align-items-center mt-2 mb-2">
-                                    <span className="fw-bolder text-dark" style={{ width: '100px', fontSize: '14px' }}>Gross Pay</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0 fw-bold" value={data.gross_pay} onChange={(e) => setData('gross_pay', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
-                                    </div>
-                                </div>
+                                ))}
                             </div>
-
-                            {/* FIXED: Buttons are now perfectly tucked underneath the left column */}
                             <div className="d-flex justify-content-center gap-3 mt-4">
                                 <button type="button" onClick={onClose} className="btn fw-bold text-white shadow-none" style={{ backgroundColor: '#D9534F', borderRadius: '8px', width: '120px', height: '42px' }}>Cancel</button>
                                 <button type="submit" className="btn fw-bold text-white shadow-sm border-0" style={{ backgroundColor: '#758AF8', borderRadius: '8px', width: '120px', height: '42px' }}>Submit</button>
                             </div>
                         </div>
 
-                        {/* Right Column: Employee Contribution */}
-                        <div className="col-md-6 border-start border-2 ps-md-4"> {/* FIXED: Reduced extreme padding to give inputs more room */}
+                        {/* Right Column */}
+                        <div className="col-md-6 border-start border-2 ps-md-4">
                             <div className="text-center py-2 mb-3 rounded-top" style={{ backgroundColor: '#D8D8DF' }}>
                                 <h6 className="fw-bold m-0 text-muted" style={{ color: '#5A637A' }}>Employee Contribution</h6>
                             </div>
-                            
                             <div className="d-flex flex-column gap-2">
-                                <div className="d-flex align-items-center">
-                                    <span className="fw-medium text-dark" style={{ width: '100px', fontSize: '14px' }}>SSS</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0" value={data.sss} onChange={(e) => setData('sss', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
+                                {['sss', 'sss_loan', 'philhealth', 'withholding_tax', 'pagibig_fund', 'pagibig_loan'].map((field) => (
+                                    <div className="d-flex align-items-center" key={field}>
+                                        <span className="fw-medium text-dark text-capitalize" style={{ width: '100px', fontSize: '14px' }}>{field.replace(/_/g, ' ')}</span>
+                                        <div className="input-group">
+                                            <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
+                                            <input type="number" className="form-control shadow-none border-start-0" value={data[field]} onChange={(e) => setData(field, e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="d-flex align-items-center">
-                                    <span className="fw-medium text-dark" style={{ width: '100px', fontSize: '14px' }}>SSS Loan</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0" value={data.sss_loan} onChange={(e) => setData('sss_loan', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
-                                    </div>
-                                </div>
-                                <div className="d-flex align-items-center">
-                                    <span className="fw-medium text-dark" style={{ width: '100px', fontSize: '14px' }}>Phl-Health</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0" value={data.philhealth} onChange={(e) => setData('philhealth', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
-                                    </div>
-                                </div>
-                                <div className="d-flex align-items-center">
-                                    <span className="fw-medium text-dark" style={{ width: '100px', fontSize: '14px' }}>Withholding<br/>Tax</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0" value={data.withholding_tax} onChange={(e) => setData('withholding_tax', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
-                                    </div>
-                                </div>
-                                <div className="d-flex align-items-center">
-                                    <span className="fw-medium text-dark" style={{ width: '100px', fontSize: '14px' }}>Pagibig<br/>Fund</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0" value={data.pagibig_fund} onChange={(e) => setData('pagibig_fund', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
-                                    </div>
-                                </div>
-                                <div className="d-flex align-items-center">
-                                    <span className="fw-medium text-dark" style={{ width: '100px', fontSize: '14px' }}>Pagibig<br/>Loan</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0" value={data.pagibig_loan} onChange={(e) => setData('pagibig_loan', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
-                                    </div>
-                                </div>
+                                ))}
                                 <hr className="my-1 border-light" />
-                                <div className="d-flex align-items-center">
-                                    <span className="fw-medium text-dark" style={{ width: '100px', fontSize: '14px' }}>Deduction</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0" value={data.deduction} onChange={(e) => setData('deduction', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
+                                {['deduction', 'other_deduction', 'total_deduction'].map((field) => (
+                                    <div className="d-flex align-items-center" key={field}>
+                                        <span className={`fw-medium text-dark text-capitalize ${field === 'total_deduction' ? 'fw-bolder' : ''}`} style={{ width: '100px', fontSize: '14px' }}>{field.replace(/_/g, ' ')}</span>
+                                        <div className="input-group">
+                                            <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
+                                            <input type="number" className={`form-control shadow-none border-start-0 ${field === 'total_deduction' ? 'fw-bold' : ''}`} value={data[field]} onChange={(e) => setData(field, e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="d-flex align-items-center">
-                                    <span className="fw-medium text-dark" style={{ width: '100px', fontSize: '14px' }}>Other<br/>Deduction</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0" value={data.other_deduction} onChange={(e) => setData('other_deduction', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
-                                    </div>
-                                </div>
-                                
-                                {/* FIXED: Kept width exact to 100px so it perfectly aligns without overflowing */}
-                                <div className="d-flex align-items-center mt-1 mb-3">
-                                    <span className="fw-bolder text-dark" style={{ width: '100px', fontSize: '14px' }}>Total<br/>Deduction</span>
-                                    <div className="input-group">
-                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0 fw-bold" value={data.total_deduction} onChange={(e) => setData('total_deduction', e.target.value)} style={{ borderRadius: '0 8px 8px 0' }} />
-                                    </div>
-                                </div>
-                                
-                                {/* Net Pay Result */}
-                                <div className="d-flex align-items-center pt-3 border-top border-2">
+                                ))}
+                                <div className="d-flex align-items-center pt-3 border-top border-2 mt-2">
                                     <span className="fw-bolder text-dark" style={{ width: '100px', fontSize: '16px' }}>Net Pay</span>
                                     <div className="input-group">
                                         <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
-                                        <input type="number" className="form-control shadow-none border-start-0 fw-bolder text-dark" value={data.net_pay} readOnly style={{ borderRadius: '0 8px 8px 0', fontSize: '16px' }} />
+                                        <input type="number" className="form-control shadow-none border-start-0 fw-bolder text-dark" value={data.net_pay} onChange={(e) => setData('net_pay', e.target.value)} style={{ borderRadius: '0 8px 8px 0', fontSize: '16px' }} />
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     </div>
@@ -272,71 +175,139 @@ const CreatePayrollModal = ({ isOpen, onClose }) => {
     );
 };
 
-// --- UPDATE MODAL (Yellow Button) ---
+// --- UPDATE MODAL (Yellow Button / Detailed Replica) ---
 const UpdatePayrollModal = ({ isOpen, onClose, payrollRecord }) => {
     if (!isOpen || !payrollRecord) return null;
 
-    const { data, setData } = useForm({
+    const isApproved = payrollRecord.status === 'Approved';
+
+    const { data, setData, reset } = useForm({
+        payroll_id: payrollRecord.id,
         employee_id: payrollRecord.employee_id,
-        date: payrollRecord.date_received !== '-' ? '2025-05-08' : '',
-        method: payrollRecord.method,
-        status: payrollRecord.status
+        payroll_date: payrollRecord.date_received !== '-' ? '2025-05-08' : '',
+        salary_method: payrollRecord.method,
+        // Status is removed from editable form data
+        rate: payrollRecord.rate, num_days: payrollRecord.num_days, regular_ot: payrollRecord.regular_ot, total_ot_pay: payrollRecord.total_ot_pay,
+        ecola: payrollRecord.ecola, allowance: payrollRecord.allowance, other_pay: payrollRecord.other_pay, gross_pay: payrollRecord.gross_pay,
+        sss: payrollRecord.sss, sss_loan: payrollRecord.sss_loan, philhealth: payrollRecord.philhealth, withholding_tax: payrollRecord.withholding_tax, pagibig_fund: payrollRecord.pagibig_fund, pagibig_loan: payrollRecord.pagibig_loan,
+        deduction: payrollRecord.deduction, other_deduction: payrollRecord.other_deduction, total_deduction: payrollRecord.total_deduction, net_pay: payrollRecord.net_pay
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log("Update Submitted:", data);
+        console.log("Update Payroll Submitted:", data);
         onClose();
+        reset();
     };
 
     return (
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050 }}>
-            <div className="card shadow-lg border-0" style={{ borderRadius: '24px', width: '100%', maxWidth: '420px', backgroundColor: '#FFF' }}>
-                <form onSubmit={handleSubmit} className="card-body p-4 p-md-5">
-                    <h3 className="fw-bolder text-center mb-4" style={{ color: '#1E1E1E' }}>Payroll</h3>
+            <EmployeeDataList />
+            <div className="card shadow-lg border-0 overflow-hidden" style={{ borderRadius: '24px', width: '100%', maxWidth: '850px', backgroundColor: '#FFF', maxHeight: '95vh', overflowY: 'auto' }}>
+                <form onSubmit={handleSubmit} className="card-body p-4">
+                    {/* FIXED: Displaying Status as a clean badge instead of a dropdown */}
+                    <h2 className="fw-bolder text-center mb-4" style={{ color: '#1E1E1E' }}>
+                        Payroll Information
+                        <span className={`badge ms-3 align-middle ${isApproved ? 'bg-success' : 'bg-warning text-dark'}`} style={{ fontSize: '14px', verticalAlign: 'middle' }}>
+                            {payrollRecord.status}
+                        </span>
+                    </h2>
                     
-                    <div className="d-flex align-items-center justify-content-center gap-3 mb-4">
-                        <span className="fw-medium text-dark" style={{ fontSize: '14px' }}>Payroll ID</span>
-                        <input type="text" className="form-control text-center shadow-none bg-light" value={payrollRecord.id} readOnly style={{ width: '60px', borderRadius: '8px' }} />
-                    </div>
-
                     <div className="row g-3 mb-4">
-                        <div className="col-12 d-flex align-items-center gap-3">
-                            <label className="mb-0 fw-medium text-dark flex-shrink-0" style={{ width: '120px', fontSize: '14px' }}>Employee ID</label>
-                            <select className="form-select shadow-none flex-grow-1" value={data.employee_id} onChange={(e) => setData('employee_id', e.target.value)} style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }}>
-                                <option value="01">01 - Admin Main</option>
-                                <option value="02">02 - Manager Main</option>
-                                <option value="03">03 - Cashier Main</option>
-                            </select>
+                        <div className="col-md-4 d-flex align-items-center gap-3">
+                            <span className="fw-medium text-dark" style={{ fontSize: '14px', minWidth: '90px' }}>Payroll ID</span>
+                            <input type="text" className="form-control text-center shadow-none bg-light" value={data.payroll_id} readOnly style={{ borderRadius: '8px', border: '1px solid #DEE2E6', width: '80px' }} />
                         </div>
-
-                        <div className="col-12 d-flex align-items-center gap-3">
-                            <label className="mb-0 fw-medium text-dark flex-shrink-0" style={{ width: '120px', fontSize: '14px' }}>Date</label>
-                            <input type="date" className="form-control shadow-none flex-grow-1" value={data.date} onChange={(e) => setData('date', e.target.value)} required style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }} />
+                        <div className="col-md-4 d-flex align-items-center gap-3">
+                            <span className="fw-medium text-dark" style={{ fontSize: '14px', minWidth: '90px' }}>Employee ID</span>
+                            <input type="text" list="employeeOptions" className={`form-control shadow-none flex-grow-1 ${isApproved ? 'bg-light' : ''}`} value={data.employee_id} onChange={(e) => setData('employee_id', e.target.value)} readOnly={isApproved} style={{ borderRadius: '8px', border: '1px solid #DEE2E6' }} />
                         </div>
-
-                        <div className="col-12 d-flex align-items-center gap-3">
-                            <label className="mb-0 fw-medium text-dark flex-shrink-0" style={{ width: '120px', fontSize: '14px' }}>Salary Method</label>
-                            <select className="form-select shadow-none flex-grow-1" value={data.method} onChange={(e) => setData('method', e.target.value)} style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }}>
+                        <div className="col-md-4 d-flex align-items-center gap-3">
+                            <span className="fw-medium text-dark" style={{ fontSize: '14px', minWidth: '90px' }}>Salary Method</span>
+                            <select className={`form-select shadow-none flex-grow-1 ${isApproved ? 'bg-light' : ''}`} value={data.salary_method} onChange={(e) => setData('salary_method', e.target.value)} disabled={isApproved} style={{ borderRadius: '8px', border: '1px solid #DEE2E6' }}>
                                 <option value="Cash">Cash</option>
                                 <option value="Bank">Bank</option>
-                                <option value="Cheque">Cheque</option>
-                            </select>
-                        </div>
-
-                        <div className="col-12 d-flex align-items-center gap-3">
-                            <label className="mb-0 fw-medium text-dark flex-shrink-0" style={{ width: '120px', fontSize: '14px' }}>Status</label>
-                            <select className="form-select shadow-none flex-grow-1" value={data.status} onChange={(e) => setData('status', e.target.value)} style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }}>
-                                <option value="Pending for Approval">Pending for Approval</option>
-                                <option value="Approved">Approved</option>
-                                <option value="Paid">Paid</option>
                             </select>
                         </div>
                     </div>
 
-                    <div className="d-flex justify-content-between gap-3 mt-4">
-                        <button type="button" onClick={onClose} className="btn w-50 fw-bold text-white shadow-none" style={{ backgroundColor: '#DC3545', borderRadius: '8px', height: '45px' }}>Cancel</button>
-                        <button type="submit" className="btn w-50 fw-bold text-white shadow-sm border-0" style={{ backgroundColor: '#EAA144', borderRadius: '8px', height: '45px' }}>Update</button>
+                    <div className="row g-4 mb-2">
+                        {/* Left Column */}
+                        <div className="col-md-6">
+                            <div className="text-center py-2 mb-3 rounded-top" style={{ backgroundColor: '#D8D8DF' }}>
+                                <h6 className="fw-bold m-0 text-muted" style={{ color: '#5A637A' }}>Regular and Overtime Pay</h6>
+                            </div>
+                            <div className="d-flex flex-column gap-2">
+                                {['rate', 'num_days', 'regular_ot', 'total_ot_pay'].map((field) => (
+                                    <div className="d-flex align-items-center" key={field}>
+                                        <span className="fw-medium text-dark text-capitalize" style={{ width: '100px', fontSize: '14px' }}>{field.replace(/_/g, ' ')}</span>
+                                        {field === 'num_days' ? (
+                                            <input type="number" className={`form-control shadow-none ${isApproved ? 'bg-light' : ''}`} value={data[field]} onChange={(e) => setData(field, e.target.value)} readOnly={isApproved} style={{ borderRadius: '8px' }} />
+                                        ) : (
+                                            <div className="input-group">
+                                                <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
+                                                <input type="number" className={`form-control shadow-none border-start-0 ${field === 'total_ot_pay' ? 'fw-bold' : ''} ${isApproved ? 'bg-light' : ''}`} value={data[field]} onChange={(e) => setData(field, e.target.value)} readOnly={isApproved} style={{ borderRadius: '0 8px 8px 0' }} />
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                                <hr className="my-1 border-light" />
+                                {['ecola', 'allowance', 'other_pay', 'gross_pay'].map((field) => (
+                                    <div className="d-flex align-items-center" key={field}>
+                                        <span className={`fw-medium text-dark text-capitalize ${field === 'gross_pay' ? 'fw-bolder' : ''}`} style={{ width: '100px', fontSize: '14px' }}>{field.replace(/_/g, ' ')}</span>
+                                        <div className="input-group">
+                                            <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
+                                            <input type="number" className={`form-control shadow-none border-start-0 ${field === 'gross_pay' ? 'fw-bold' : ''} ${isApproved ? 'bg-light' : ''}`} value={data[field]} onChange={(e) => setData(field, e.target.value)} readOnly={isApproved} style={{ borderRadius: '0 8px 8px 0' }} />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* FIXED: Submit Button disappears if already Approved. Cancel text becomes "Close". */}
+                            <div className="d-flex justify-content-center gap-3 mt-4">
+                                <button type="button" onClick={onClose} className="btn fw-bold text-white shadow-none" style={{ backgroundColor: '#D9534F', borderRadius: '8px', width: '120px', height: '42px' }}>
+                                    {isApproved ? 'Close' : 'Cancel'}
+                                </button>
+                                {!isApproved && (
+                                    <button type="submit" className="btn fw-bold text-white shadow-sm border-0" style={{ backgroundColor: '#EAA144', borderRadius: '8px', width: '120px', height: '42px' }}>Update</button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Right Column */}
+                        <div className="col-md-6 border-start border-2 ps-md-4">
+                            <div className="text-center py-2 mb-3 rounded-top" style={{ backgroundColor: '#D8D8DF' }}>
+                                <h6 className="fw-bold m-0 text-muted" style={{ color: '#5A637A' }}>Employee Contribution</h6>
+                            </div>
+                            <div className="d-flex flex-column gap-2">
+                                {['sss', 'sss_loan', 'philhealth', 'withholding_tax', 'pagibig_fund', 'pagibig_loan'].map((field) => (
+                                    <div className="d-flex align-items-center" key={field}>
+                                        <span className="fw-medium text-dark text-capitalize" style={{ width: '100px', fontSize: '14px' }}>{field.replace(/_/g, ' ')}</span>
+                                        <div className="input-group">
+                                            <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
+                                            <input type="number" className={`form-control shadow-none border-start-0 ${isApproved ? 'bg-light' : ''}`} value={data[field]} onChange={(e) => setData(field, e.target.value)} readOnly={isApproved} style={{ borderRadius: '0 8px 8px 0' }} />
+                                        </div>
+                                    </div>
+                                ))}
+                                <hr className="my-1 border-light" />
+                                {['deduction', 'other_deduction', 'total_deduction'].map((field) => (
+                                    <div className="d-flex align-items-center" key={field}>
+                                        <span className={`fw-medium text-dark text-capitalize ${field === 'total_deduction' ? 'fw-bolder' : ''}`} style={{ width: '100px', fontSize: '14px' }}>{field.replace(/_/g, ' ')}</span>
+                                        <div className="input-group">
+                                            <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
+                                            <input type="number" className={`form-control shadow-none border-start-0 ${field === 'total_deduction' ? 'fw-bold' : ''} ${isApproved ? 'bg-light' : ''}`} value={data[field]} onChange={(e) => setData(field, e.target.value)} readOnly={isApproved} style={{ borderRadius: '0 8px 8px 0' }} />
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="d-flex align-items-center pt-3 border-top border-2 mt-2">
+                                    <span className="fw-bolder text-dark" style={{ width: '100px', fontSize: '16px' }}>Net Pay</span>
+                                    <div className="input-group">
+                                        <span className="input-group-text bg-white border-end-0 text-muted" style={{ borderRadius: '8px 0 0 8px' }}>₱</span>
+                                        <input type="number" className={`form-control shadow-none border-start-0 fw-bolder text-dark ${isApproved ? 'bg-light' : ''}`} value={data.net_pay} onChange={(e) => setData('net_pay', e.target.value)} readOnly={isApproved} style={{ borderRadius: '0 8px 8px 0', fontSize: '16px' }} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -352,9 +323,18 @@ export default function Payroll() {
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
     const [selectedPayroll, setSelectedPayroll] = useState(null);
     
+    // Detailed Dummy Data to accurately populate the Edit Modal
     const dummyPayrolls = [
-        { id: '01', employee_id: '03', method: 'Cash', status: 'Approved', date_received: '05-08-2025' },
-        { id: '02', employee_id: '01', method: 'Bank', status: 'Pending for Approval', date_received: '-' },
+        { 
+            id: '01', employee_id: '03 - Cashier Main', method: 'Cash', status: 'Approved', date_received: '2025-05-08',
+            rate: '450', num_days: '5', regular_ot: '420', total_ot_pay: '1420', ecola: '500', allowance: '200', other_pay: '250', gross_pay: '5000',
+            sss: '750', sss_loan: '1000', philhealth: '500', withholding_tax: '400', pagibig_fund: '200', pagibig_loan: '800', deduction: '3650', other_deduction: '150', total_deduction: '3800', net_pay: '1240'
+        },
+        { 
+            id: '02', employee_id: '01 - Admin Main', method: 'Bank', status: 'Pending for Approval', date_received: '2025-05-09',
+            rate: '500', num_days: '10', regular_ot: '0', total_ot_pay: '0', ecola: '0', allowance: '1000', other_pay: '0', gross_pay: '6000',
+            sss: '500', sss_loan: '0', philhealth: '300', withholding_tax: '100', pagibig_fund: '100', pagibig_loan: '0', deduction: '1000', other_deduction: '0', total_deduction: '1000', net_pay: '5000'
+        },
     ];
 
     const openUpdateModal = (payroll) => {
@@ -397,9 +377,9 @@ export default function Payroll() {
                         <thead style={{ backgroundColor: '#E3E4ED', color: '#1E1E1E' }}>
                             <tr>
                                 <th className="py-4 fw-bold" style={{ fontSize: '15px', width: '15%' }}>Payroll ID</th>
-                                <th className="py-4 fw-bold" style={{ fontSize: '15px', width: '15%' }}>Employee ID</th>
+                                <th className="py-4 fw-bold" style={{ fontSize: '15px', width: '20%' }}>Employee</th>
                                 <th className="py-4 fw-bold" style={{ fontSize: '15px', width: '15%' }}>Salary Method</th>
-                                <th className="py-4 fw-bold" style={{ fontSize: '15px', width: '25%' }}>Status</th>
+                                <th className="py-4 fw-bold" style={{ fontSize: '15px', width: '20%' }}>Status</th>
                                 <th className="py-4 fw-bold" style={{ fontSize: '15px', width: '15%' }}>Date Received</th>
                                 <th className="py-4 fw-bold" style={{ fontSize: '15px', width: '15%' }}>Action</th>
                             </tr>
