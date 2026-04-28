@@ -1,103 +1,252 @@
-import React from 'react';
+import React, { useState } from 'react';
 import CustomerLayout from '../../Layout/CustomerLayout';
-import { Link, usePage } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import { IoReceipt } from "react-icons/io5";
 import { useRoute } from '../../../../vendor/tightenco/ziggy/';
+import { Toaster, toast } from 'sonner';
+
+// --- CUSTOM ICONS ---
+const ArrowLeft = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+);
+
+const ArrowRight = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 19"></polyline></svg>
+);
 
 function Orders({ orders }) {
     const route = useRoute();
+    const [searchQuery, setSearchQuery] = useState('');
+    
+    // --- EXACT REFUND MODAL STATES FROM PRODUCTS.JSX ---
+    const [refundStep, setRefundStep] = useState(0);
+    const [refundData, setRefundData] = useState({ invoiceNum: '', reason: '', method: '' });
+
+    // When clicking a row, open Step 1 and pre-fill the Invoice Number
+    const openReturnModal = (orderId) => {
+        setRefundData({ invoiceNum: orderId ? `#TUNGAL${orderId}` : '', reason: '', method: '' });
+        setRefundStep(1);
+    };
+
+    const handleCloseRefund = () => {
+        setRefundStep(0);
+        setRefundData({ invoiceNum: '', reason: '', method: '' });
+    };
+
+    const nextStep = () => setRefundStep(prev => prev + 1);
+    const prevStep = () => setRefundStep(prev => prev - 1);
+
+    const submitRefundRequest = (e) => {
+        e.preventDefault();
+        toast.success("Refund request confirmed and submitted successfully!");
+        handleCloseRefund();
+    };
 
     return (
-        <div>
-            <h2 className='text-success mb-3'>{orders.total} Orders</h2>
-            <div className="card shadow rounded-lg border-0">
-                <div className="card-body">
-                    <table className="table">
-                        <thead>
-                            <tr className='text-center'>
-                                <th className='text-start'>Order ID</th>
-                                <th>Quantity</th>
-                                <th>Total</th>
-                                <th>Cash Received</th>
-                                <th>Change</th>
-                                <th>Status</th>
-                                <th>Ordered Date</th>
-                                <th>Invoice</th>
+        <div className="container-fluid py-4 px-4" style={{ minHeight: '100vh', backgroundColor: '#F5F5FB', fontFamily: "'Poppins', sans-serif" }}>
+            <Toaster position="top-right" richColors expand={true} />
+
+            {/* HEADER SECTION */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 className="fw-bolder m-0" style={{ color: '#1E1E1E', fontSize: '32px', letterSpacing: '-0.5px' }}>Order History</h1>
+                    <p className="text-muted m-0 mt-1 fw-medium">{orders.total} Total Orders</p>
+                </div>
+                
+                {/* Search Bar */}
+                <div className="position-relative">
+                    <input 
+                        type="text" 
+                        className="form-control shadow-none border-0 text-center fw-medium" 
+                        placeholder="Search Orders"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{ backgroundColor: '#EBE9F1', borderRadius: '50px', width: '300px', height: '42px', color: '#5A637A' }} 
+                    />
+                </div>
+            </div>
+
+            {/* TABLE SECTION */}
+            <div className="bg-white rounded-3 shadow-sm overflow-hidden">
+                <div className="table-responsive">
+                    <table className="table table-borderless align-middle mb-0 text-center">
+                        <thead style={{ backgroundColor: '#E3E4ED', color: '#1E1E1E' }}>
+                            <tr>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '14px', width: '10%' }}>Order ID</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '14px' }}>Quantity</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '14px' }}>Total</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '14px' }}>Cash Recv.</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '14px' }}>Change</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '14px' }}>Date</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '14px' }}>Status</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '14px', width: '15%' }}>Action</th>
                             </tr>
                         </thead>
-                        <tbody className='text-center'>
+                        <tbody>
                             {orders.data.length > 0 ? (
-                                orders.data.map((order) => {
+                                orders.data.map((order, index) => {
                                     const formattedDate = new Date(order.updated_at).toLocaleString("en-US", {
-                                        month: "long",
-                                        day: "2-digit",
-                                        year: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                        hour12: true,
+                                        month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true,
                                     });
 
                                     const orderId = order.details.length > 0 ? order.details[0].order_id : null;
 
                                     return (
-                                        <tr className='align-middle' key={order.id}>
-                                            <td className='text-start'>
-                                                {orderId ? `#TUNGAL${orderId}` : 'N/A'}
+                                        <tr key={order.id} style={{ borderBottom: index !== orders.data.length - 1 ? '1px solid #F0F0F5' : 'none' }}>
+                                            <td className="py-3 fw-bolder text-dark" style={{ fontSize: '14px' }}>{orderId ? `#TUNGAL${orderId}` : 'N/A'}</td>
+                                            <td className="py-3 fw-bold text-dark" style={{ fontSize: '14px' }}>{order.quantity}</td>
+                                            <td className="py-3 text-dark" style={{ fontSize: '14px' }}>₱{order.total}</td>
+                                            <td className="py-3 text-dark" style={{ fontSize: '14px' }}>₱{order.cash_recieved}</td>
+                                            <td className="py-3 text-dark" style={{ fontSize: '14px' }}>₱{order.change}</td>
+                                            <td className="py-3 text-dark" style={{ fontSize: '13px' }}>{formattedDate}</td>
+                                            <td className="py-3">
+                                                <span className="badge bg-success-subtle text-success px-3 py-2 rounded-pill">{order.order_status}</span>
                                             </td>
-                                            <td>{order.quantity}</td>
-                                            <td>₱{order.total}</td>
-                                            <td>₱{order.cash_recieved}</td>
-                                            <td>₱{order.change}</td>
-                                            <td className='text-success'>{order.order_status}</td>
-                                            <td>{formattedDate}</td>
-                                            <td>
-                                                {orderId && (
-                                                    <Link
-                                                        href={route('customer.invoice', { order_id: orderId })}
-                                                        className='fs-5 text-dark'
-                                                    >
-                                                        <IoReceipt />
-                                                    </Link>
-                                                )}
+                                            <td className="py-3">
+                                                <div className="d-flex align-items-center justify-content-center gap-2">
+                                                    {orderId && (
+                                                        <Link href={route('customer.invoice', { order_id: orderId })} className="btn btn-sm btn-light shadow-sm d-flex align-items-center justify-content-center" style={{ width: '34px', height: '34px', borderRadius: '8px' }} title="View Invoice">
+                                                            <IoReceipt className="fs-5 text-dark" />
+                                                        </Link>
+                                                    )}
+                                                    <button onClick={() => openReturnModal(orderId)} className="btn btn-sm d-inline-flex align-items-center justify-content-center gap-1 fw-semibold shadow-sm text-white" style={{ backgroundColor: '#D9534F', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', border: 'none' }} title="Request Refund">
+                                                        Refund
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan="9" className="text-center text-muted py-3">
-                                        No orders found.
-                                    </td>
+                                    <td colSpan="8" className="text-center text-muted py-5">No orders found.</td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
+            </div>
 
-                <div className="card-footer d-flex justify-content-between align-items-center bg-light text-success p-3">
-                    <p>Showing {orders.to} out of {orders.total} Products</p>
-                    <div>
-                        {orders.links.map((link) => (
+            {/* CUSTOM STYLED PAGINATION */}
+            {orders.data.length > 0 && (
+                <div className="d-flex justify-content-between align-items-center mt-4">
+                    <span className="text-muted fw-medium" style={{ fontSize: '14px' }}>
+                        Showing {orders.from || 0} to {orders.to || 0} of {orders.total} Entries
+                    </span>
+                    <div className="d-flex align-items-center gap-2">
+                        {orders.links.map((link, index) => (
                             link.url ? (
                                 <Link
-                                    key={link.label}
+                                    key={index}
                                     href={link.url}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                    className={`btn btn-sm me-3 ${link.active ? 'btn-success' : 'btn-outline-success'}`}
-                                    style={{ textDecoration: 'none' }}
+                                    className={`d-flex justify-content-center align-items-center fw-bolder shadow-sm text-decoration-none ${link.active ? 'text-white' : 'text-dark bg-white'}`}
+                                    style={{ 
+                                        width: '36px', height: '36px', 
+                                        backgroundColor: link.active ? '#758AF8' : '#FFF',
+                                        borderRadius: '8px', fontSize: '14px',
+                                        border: link.active ? 'none' : '1px solid #EBEAEE'
+                                    }}
                                     preserveScroll
+                                    dangerouslySetInnerHTML={{ __html: link.label.replace('Previous', '&laquo;').replace('Next', '&raquo;') }}
                                 />
                             ) : (
                                 <span
-                                    key={link.label}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                    className='me-3 text-muted'
+                                    key={index}
+                                    className="d-flex justify-content-center align-items-center text-muted bg-light"
+                                    style={{ width: '36px', height: '36px', borderRadius: '8px', fontSize: '14px', border: '1px solid #EBEAEE' }}
+                                    dangerouslySetInnerHTML={{ __html: link.label.replace('Previous', '&laquo;').replace('Next', '&raquo;') }}
                                 />
                             )
                         ))}
                     </div>
                 </div>
-            </div>
+            )}
+
+            {/* MULTI-STEP REFUND REQUEST MODAL */}
+            {refundStep > 0 && (
+                <div className="modal fade show d-block position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050 }}>
+                    <div className="card shadow-lg border-0" style={{ borderRadius: '16px', width: '100%', maxWidth: '450px', backgroundColor: '#FFF' }}>
+                        
+                        <div className="card-header border-0 text-white p-4" style={{ backgroundColor: '#7DA0FA', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
+                            <h4 className="modal-title fw-bold m-0 d-flex justify-content-between align-items-center">
+                                {refundStep === 1 || refundStep === 3 ? 'Request Refund' : 'Choose Refund Method'}
+                                <button type="button" className="btn-close btn-close-white" onClick={handleCloseRefund}></button>
+                            </h4>
+                        </div>
+
+                        <div className="card-body p-4 p-md-5">
+                            {refundStep === 1 && (
+                                <div>
+                                    <p className="text-muted fw-medium mb-4" style={{ fontSize: '14px' }}>Please indicate the required details of your refund request.</p>
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Invoice #</label>
+                                        {/* FIXED: readOnly and locked styling added below */}
+                                        <input 
+                                            type="text" 
+                                            className="form-control shadow-none bg-light" 
+                                            style={{ borderRadius: '8px', border: '1px solid #DEE2E6', cursor: 'not-allowed' }} 
+                                            value={refundData.invoiceNum} 
+                                            readOnly 
+                                        />
+                                    </div>
+                                    <div className="mb-4">
+                                        <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Reason</label>
+                                        <textarea className="form-control shadow-none" rows="4" style={{ borderRadius: '8px', backgroundColor: '#F8F9FA', resize: 'none' }} value={refundData.reason} onChange={e => setRefundData({...refundData, reason: e.target.value})}></textarea>
+                                    </div>
+                                    <div className="d-flex justify-content-end gap-3 mt-4">
+                                        <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={handleCloseRefund} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Cancel</button>
+                                        <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={nextStep} disabled={!refundData.invoiceNum || !refundData.reason} style={{ backgroundColor: '#7DA0FA', borderRadius: '8px', width: '120px' }}>Next</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {refundStep === 2 && (
+                                <div>
+                                    <p className="text-muted fw-medium mb-4" style={{ fontSize: '14px' }}>How would you like to receive your refund?</p>
+                                    <div className="mb-5">
+                                        <label className="form-label fw-bold text-dark" style={{ fontSize: '14px' }}>Refund Method</label>
+                                        <select className="form-select shadow-none" style={{ borderRadius: '8px', backgroundColor: '#F8F9FA' }} value={refundData.method} onChange={e => setRefundData({...refundData, method: e.target.value})}>
+                                            <option value="" disabled>Select a Method</option>
+                                            <option value="Gcash">GCash</option>
+                                            <option value="Bank">Bank Transfer</option>
+                                            <option value="Cash">Cash (In-Store)</option>
+                                        </select>
+                                    </div>
+                                    <div className="d-flex justify-content-end gap-3 mt-4">
+                                        <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={prevStep} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Back</button>
+                                        <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={nextStep} disabled={!refundData.method} style={{ backgroundColor: '#7DA0FA', borderRadius: '8px', width: '120px' }}>Next</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {refundStep === 3 && (
+                                <form onSubmit={submitRefundRequest}>
+                                    <p className="text-muted fw-medium mb-4" style={{ fontSize: '14px' }}>Please confirm the details below.</p>
+                                    <div className="d-flex flex-column gap-3 mb-5">
+                                        <div className="d-flex flex-column">
+                                            <span className="fw-bold text-dark" style={{ fontSize: '14px' }}>Invoice #</span>
+                                            <div className="form-control shadow-none bg-light" style={{ borderRadius: '8px', border: '1px solid #EBEAEE' }}>{refundData.invoiceNum}</div>
+                                        </div>
+                                        <div className="d-flex flex-column">
+                                            <span className="fw-bold text-dark" style={{ fontSize: '14px' }}>Refund Method</span>
+                                            <div className="form-control shadow-none bg-light" style={{ borderRadius: '8px', border: '1px solid #EBEAEE' }}>{refundData.method}</div>
+                                        </div>
+                                        <div className="d-flex flex-column">
+                                            <span className="fw-bold text-dark" style={{ fontSize: '14px' }}>Reason</span>
+                                            <div className="form-control shadow-none bg-light p-2" style={{ borderRadius: '8px', border: '1px solid #EBEAEE', minHeight: '80px', wordBreak: 'break-word' }}>{refundData.reason}</div>
+                                        </div>
+                                    </div>
+                                    <div className="d-flex justify-content-end gap-3 mt-4">
+                                        <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={prevStep} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Back</button>
+                                        <button type="submit" className="btn fw-bold px-4 text-white shadow-none" style={{ backgroundColor: '#28A745', borderRadius: '8px', width: '120px' }}>Confirm</button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }
