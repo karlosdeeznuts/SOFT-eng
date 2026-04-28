@@ -43,6 +43,9 @@ Route::middleware(['auth', EmployeeMiddleware::class])->group(function () {
     Route::post('/profile/updateProfilePassword',[UserController::class,'updateProfilePassword'])->name('customer.updateProfilePassword');
 
     Route::get('/orders', [OrderController::class,'orders'])->name('customer.orders');
+
+    Route::post('/orders/return', [App\Http\Controllers\ReturnController::class, 'store'])->name('customer.return.store');
+    
     Route::post('/employee/logout', [UserController::class,'employeeLogout'])->name('employee.logout');
 });
 

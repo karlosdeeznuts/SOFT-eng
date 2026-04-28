@@ -15,6 +15,12 @@ Route::middleware(['auth',AdminMiddleware::class])->group(function () {
         return inertia('Admin/Report');
     })->name('admin.report');
 
+    Route::get('/admin/returns', [App\Http\Controllers\ReturnController::class, 'index'])->name('admin.returns');
+
+    Route::get('/admin/payroll', function () {
+        return inertia('Admin/Payroll');
+    })->name('admin.payroll');
+
     // ----------------------------------------------------------------------------
 
     // Sales-Features Routes
