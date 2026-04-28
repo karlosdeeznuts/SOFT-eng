@@ -15,6 +15,10 @@ Route::middleware(['auth',AdminMiddleware::class])->group(function () {
         return inertia('Admin/Report');
     })->name('admin.report');
 
+    Route::get('/admin/returns', function () {
+        return inertia('Admin/Returns');
+    })->name('admin.returns');
+
     Route::get('/admin/payroll', function () {
         return inertia('Admin/Payroll');
     })->name('admin.payroll');

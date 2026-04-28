@@ -68,9 +68,9 @@ export default function AdminLayout({ children }) {
                         
                         {/* Admin & Manager */}
                         {(role === 'Admin' || role === 'Manager') && (
-                            <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
-                                <BsArrowReturnLeft className="fs-5" /> Returns
-                            </Link>
+                            <Link href={route('admin.returns')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.returns') ? activeLinkStyle : inactiveLinkStyle}>
+    <BsArrowReturnLeft className="fs-5" /> Returns
+</Link>
                         )}
                         
                         {/* Admin Only */}
