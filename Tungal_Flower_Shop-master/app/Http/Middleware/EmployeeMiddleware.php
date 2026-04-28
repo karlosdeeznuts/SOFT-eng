@@ -10,14 +10,10 @@ class EmployeeMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
-
-        switch($user->role){
-            case 'Cashier':
-                return $next($request);
-                break;
-            default:
-                abort(403);
+        // Allows Cashiers to access the POS. Admins and Managers are also added here so they can ring people up if needed.
+        if (auth()->check() && in_array(auth()->user()->role, ['Employee', 'Cashier', 'Manager', 'Admin', 'Owner'])) {
+            return $next($request);
         }
+        abort(403);
     }
 }
