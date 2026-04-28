@@ -11,9 +11,7 @@ Route::middleware(['auth',AdminMiddleware::class])->group(function () {
     Route::get('/admin/dashboard', [UserController::class,'dashboard'])
     ->name('admin.dashboard');
 
-    Route::get('/admin/report', function () {
-        return inertia('Admin/Report');
-    })->name('admin.report');
+    Route::get('/admin/report', [UserController::class, 'report'])->name('admin.report');
 
     Route::get('/admin/returns', [App\Http\Controllers\ReturnController::class, 'index'])->name('admin.returns');
 

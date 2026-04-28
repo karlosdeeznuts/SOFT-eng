@@ -5,8 +5,22 @@ import { BsFileText } from "react-icons/bs";
 import SalesChart from '../../Layout/SalesChart';
 import AdminLayout from '../../Layout/AdminLayout'
 
-function Dashboard({ topSellingProducts }) {
+function Dashboard({ 
+    total_flowers_in_store, 
+    recent_orders_count, 
+    chartData, 
+    topSellingProducts, 
+    leastSellingProducts, 
+    low_stock_count, 
+    total_categories, 
+    recently_added, 
+    returned_flowers 
+}) {
     
+    // Arrays preserving your exact design colors for the dynamic mapping
+    const topColors = ['#8ea9f9', '#a1c1ff', '#d0d4ef'];
+    const leastColors = ['#ef7d84', '#f6a9ae', '#fbd1d6'];
+
     return (
         <div className="container-fluid p-0">
             <h2 className="fw-bold mb-4" style={{ color: '#1a1d2d' }}>Dashboard</h2>
@@ -18,7 +32,7 @@ function Dashboard({ topSellingProducts }) {
                         <div className="card-body p-4 d-flex justify-content-between align-items-center">
                             <div>
                                 <p className="mb-1" style={{ fontSize: '0.95rem' }}>Total Flowers in Store</p>
-                                <h1 className="fw-bold mb-0 display-5">200</h1>
+                                <h1 className="fw-bold mb-0 display-5">{total_flowers_in_store || 0}</h1>
                             </div>
                             <BsBoxSeam style={{ fontSize: '2.5rem', opacity: '0.9' }} />
                         </div>
@@ -29,7 +43,7 @@ function Dashboard({ topSellingProducts }) {
                         <div className="card-body p-4 d-flex justify-content-between align-items-center">
                             <div>
                                 <p className="mb-1" style={{ fontSize: '0.95rem' }}>Total Flowers Orders</p>
-                                <h1 className="fw-bold mb-0 display-5 d-inline-block me-2">52</h1>
+                                <h1 className="fw-bold mb-0 display-5 d-inline-block me-2">{recent_orders_count || 0}</h1>
                                 <span style={{ fontSize: '0.8rem', opacity: '0.8' }}>(last 30 days)</span>
                             </div>
                             <HiOutlinePencil style={{ fontSize: '2rem', opacity: '0.9' }} />
@@ -45,8 +59,8 @@ function Dashboard({ topSellingProducts }) {
                         <div className="card-body p-4">
                             <h5 className="fw-bold" style={{ color: '#6d78e3' }}>Sales Summary <span className="text-muted fw-normal fs-6">(last 30 days)</span></h5>
                             <div className="mt-4" style={{ height: '250px' }}>
-                                {/* Reusing your existing chart component here as a placeholder for the bar chart */}
-                                <SalesChart topSellingProducts={topSellingProducts} />
+                                {/* Feeds the larger dataset to your chart */}
+                                <SalesChart topSellingProducts={chartData || []} />
                             </div>
                         </div>
                     </div>
@@ -58,19 +72,19 @@ function Dashboard({ topSellingProducts }) {
                             
                             <div className="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
                                 <span className="fw-bold" style={{ color: '#de5b62' }}>Low Stock Flower Categories</span>
-                                <span className="fw-bold" style={{ color: '#de5b62' }}>12</span>
+                                <span className="fw-bold" style={{ color: '#de5b62' }}>{low_stock_count || 0}</span>
                             </div>
                             <div className="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
                                 <span className="text-secondary fw-semibold">Flower Categories</span>
-                                <span className="fw-bold text-dark">15</span>
+                                <span className="fw-bold text-dark">{total_categories || 0}</span>
                             </div>
                             <div className="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
                                 <span className="text-secondary fw-semibold">Recently added amount</span>
-                                <span className="fw-bold text-dark">13</span>
+                                <span className="fw-bold text-dark">{recently_added || 0}</span>
                             </div>
                             <div className="d-flex justify-content-between align-items-center mt-4">
                                 <span className="fw-bold" style={{ color: '#db8435' }}>Returned/Damaged Flowers</span>
-                                <span className="fw-bold" style={{ color: '#db8435' }}>13</span>
+                                <span className="fw-bold" style={{ color: '#db8435' }}>{returned_flowers || 0}</span>
                             </div>
                         </div>
                     </div>
@@ -84,27 +98,23 @@ function Dashboard({ topSellingProducts }) {
                         <div className="card-body p-4 d-flex flex-column">
                             <h5 className="fw-bold mb-4" style={{ color: '#6d78e3' }}>Top Selling Flowers <span className="text-muted fw-normal fs-6">(last 30 days)</span></h5>
                             <div className="row flex-grow-1 text-center g-3">
-                                <div className="col-4">
-                                    <div className="p-3 rounded h-100 d-flex flex-column justify-content-center" style={{ backgroundColor: '#8ea9f9' }}>
-                                        <p className="fw-bold text-dark mb-2">Red Roses</p>
-                                        <h4 className="fw-bold text-dark mb-0">742</h4>
+                                {topSellingProducts && topSellingProducts.length > 0 ? (
+                                    topSellingProducts.map((item, index) => (
+                                        <div className="col-4" key={index}>
+                                            <div className="p-3 rounded h-100 d-flex flex-column justify-content-center" style={{ backgroundColor: topColors[index] || '#d0d4ef' }}>
+                                                <p className="fw-bold text-dark mb-2">{item.product?.product_name || 'Unknown'}</p>
+                                                <h4 className="fw-bold text-dark mb-0">{item.total_sales}</h4>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="col-12 d-flex align-items-center justify-content-center">
+                                        <p className="text-muted mb-0">No sales data available yet.</p>
                                     </div>
-                                </div>
-                                <div className="col-4">
-                                    <div className="p-3 rounded h-100 d-flex flex-column justify-content-center" style={{ backgroundColor: '#a1c1ff' }}>
-                                        <p className="fw-bold text-dark mb-2">Purple Tulip</p>
-                                        <h4 className="fw-bold text-dark mb-0">250</h4>
-                                    </div>
-                                </div>
-                                <div className="col-4">
-                                    <div className="p-3 rounded h-100 d-flex flex-column justify-content-center" style={{ backgroundColor: '#d0d4ef' }}>
-                                        <p className="fw-bold text-dark mb-2">Sunflowers</p>
-                                        <h4 className="fw-bold text-dark mb-0">43</h4>
-                                    </div>
-                                </div>
+                                )}
                             </div>
                             <div className="text-center mt-4">
-                                <a href="#" className="text-decoration-none fw-bold" style={{ color: '#44519e' }}><BsFileText /> View Report</a>
+                                <a href={route('admin.report')} className="text-decoration-none fw-bold" style={{ color: '#44519e' }}><BsFileText /> View Report</a>
                             </div>
                         </div>
                     </div>
@@ -115,27 +125,23 @@ function Dashboard({ topSellingProducts }) {
                         <div className="card-body p-4 d-flex flex-column">
                             <h5 className="fw-bold mb-4" style={{ color: '#de5b62' }}>Least Selling Flowers <span className="text-muted fw-normal fs-6">(last 30 days)</span></h5>
                             <div className="row flex-grow-1 text-center g-3">
-                                <div className="col-4">
-                                    <div className="p-3 rounded h-100 d-flex flex-column justify-content-center" style={{ backgroundColor: '#ef7d84' }}>
-                                        <p className="fw-bold text-dark mb-2">Lily</p>
-                                        <h4 className="fw-bold text-dark mb-0">14</h4>
+                                {leastSellingProducts && leastSellingProducts.length > 0 ? (
+                                    leastSellingProducts.map((item, index) => (
+                                        <div className="col-4" key={index}>
+                                            <div className="p-3 rounded h-100 d-flex flex-column justify-content-center" style={{ backgroundColor: leastColors[index] || '#fbd1d6' }}>
+                                                <p className="fw-bold text-dark mb-2">{item.product?.product_name || 'Unknown'}</p>
+                                                <h4 className="fw-bold text-dark mb-0">{item.total_sales}</h4>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="col-12 d-flex align-items-center justify-content-center">
+                                        <p className="text-muted mb-0">No sales data available yet.</p>
                                     </div>
-                                </div>
-                                <div className="col-4">
-                                    <div className="p-3 rounded h-100 d-flex flex-column justify-content-center" style={{ backgroundColor: '#f6a9ae' }}>
-                                        <p className="fw-bold text-dark mb-2">Yellow Roses</p>
-                                        <h4 className="fw-bold text-dark mb-0">15</h4>
-                                    </div>
-                                </div>
-                                <div className="col-4">
-                                    <div className="p-3 rounded h-100 d-flex flex-column justify-content-center" style={{ backgroundColor: '#fbd1d6' }}>
-                                        <p className="fw-bold text-dark mb-2">Tulip</p>
-                                        <h4 className="fw-bold text-dark mb-0">18</h4>
-                                    </div>
-                                </div>
+                                )}
                             </div>
                             <div className="text-center mt-4">
-                                <a href="#" className="text-decoration-none fw-bold" style={{ color: '#de5b62' }}><BsFileText /> View Report</a>
+                                <a href={route('admin.report')} className="text-decoration-none fw-bold" style={{ color: '#de5b62' }}><BsFileText /> View Report</a>
                             </div>
                         </div>
                     </div>
