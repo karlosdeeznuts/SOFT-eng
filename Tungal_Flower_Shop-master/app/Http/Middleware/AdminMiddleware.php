@@ -10,16 +10,10 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
-
-        switch($user->role){
-            case 'Admin':
-            case 'Manager':
-            case 'Owner':
-                return $next($request);
-                break;
-            default:
-                abort(403);
+        // Allow Admin, Manager, and Owner to access the Admin dashboards
+        if (auth()->check() && in_array(auth()->user()->role, ['Admin', 'Manager', 'Owner'])) {
+            return $next($request);
         }
+        abort(403);
     }
 }

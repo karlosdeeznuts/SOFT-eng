@@ -6,7 +6,7 @@ use App\Models\User;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\OrderDetail;
-use App\Models\Attendance; // NEW: Brought in the Attendance Model
+use App\Models\Attendance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -26,11 +26,12 @@ class UserController extends Controller
 
             $user = Auth::user(); 
 
-            if($user->role === 'Admin' || $user->role === 'Owner'){
+            // Group the dashboard routes cleanly using arrays
+            if(in_array($user->role, ['Admin', 'Manager', 'Owner'])){
                 return redirect()->intended('/admin/dashboard');
-            }elseif($user->role === 'Manager' || $user->role === 'Cashier' || $user->role === 'Employee'){
+            }elseif(in_array($user->role, ['Cashier', 'Employee'])){
                 return redirect()->intended('/product');
-            }elseif($user->role === 'Delivery'){
+            }elseif(strtolower($user->role) === 'delivery'){
                 return redirect()->intended('/delivery/dashboard');
             }
             
@@ -87,19 +88,17 @@ class UserController extends Controller
     }
 
     public function displayEmployee(){
-        $employees = User::whereIn('role', ['Manager', 'Cashier', 'Employee'])->get();
+        $employees = User::whereIn('role', ['Manager', 'Cashier', 'Delivery', 'Employee'])->get();
         return inertia('Admin/Employee',['employees' => $employees]);
     }
 
     public function viewEmployeeProfile($user_id) {
-        // Sends the attendance history straight to the React frontend
         $employee_profile = User::with('attendances')->find($user_id);
         return inertia('Admin/Employee_Features/ViewProfile', [
             'user_info' => $employee_profile
         ]);
     }
 
-    // THE NEW ATTENDANCE LOGIC
     public function storeAttendance(Request $request) {
         $request->validate([
             'user_id' => 'required|exists:users,id',
@@ -221,7 +220,7 @@ class UserController extends Controller
     }
 
     public function sales($order_id = null){
-        $employees = User::whereIn('role', ['Manager', 'Cashier', 'Employee'])->get();
+        $employees = User::whereIn('role', ['Manager', 'Cashier', 'Delivery', 'Employee'])->get();
 
         if($order_id == null){
             $order_id_list = OrderDetail::select('order_id')->distinct()->latest()->get();
@@ -249,7 +248,7 @@ class UserController extends Controller
     }
 
     public function selectedEmployee($user_id){
-        $employees = User::whereIn('role', ['Manager', 'Cashier', 'Employee'])->get();
+        $employees = User::whereIn('role', ['Manager', 'Cashier', 'Delivery', 'Employee'])->get();
         if($user_id != 'All'){
             $order_id_list = OrderDetail::select('order_id')->where('user_id',$user_id)->distinct()->latest()->get();
             $orders = Order::where('user_id',$user_id)->latest()->paginate(12);
@@ -279,7 +278,7 @@ class UserController extends Controller
         $rawId = $request->input('order_id');
         $cleanId = preg_replace('/\D+/', '', $rawId);
         
-        $employees = User::whereIn('role', ['Manager', 'Cashier', 'Employee'])->get();
+        $employees = User::whereIn('role', ['Manager', 'Cashier', 'Delivery', 'Employee'])->get();
         $orders = Order::where('id', $cleanId)->latest()->paginate(12);
 
         return inertia('Admin/Sales',[
