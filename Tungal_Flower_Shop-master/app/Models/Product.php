@@ -9,18 +9,23 @@ class Product extends Model
 {
     use HasFactory;
 
+    // Updated to match your exact database columns
     protected $fillable = [
-        'name',
-        'type_id',
-        'origin',
-        'supplier',
-        'unit_price',
-        'markup_percentage',
-        'selling_price',
-        'size',
-        'quantity', // We keep this as a cached total for now to not break the UI instantly
+        'product_name',
+        'description',
+        'price',
+        'stocks', 
         'image',
     ];
+
+    /**
+     * Get all types associated with this product.
+     * (Retaining this based on your React payload)
+     */
+    public function types()
+    {
+        return $this->hasMany(ProductType::class); 
+    }
 
     /**
      * Get all batches for this product.

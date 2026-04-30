@@ -4,7 +4,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Controllers\ProductController;
-use Illuminate\Support\Facades\Route; // Added this just to be safe
+use Illuminate\Support\Facades\Route; 
 
 Route::middleware(['auth',AdminMiddleware::class])->group(function () {
     // Admin Routes
@@ -74,9 +74,9 @@ Route::middleware(['auth',AdminMiddleware::class])->group(function () {
 
     Route::post('/admin/inventory/addProduct/store',[ProductController::class,'storeProduct'])->name('inventory.storeProduct');
 
-    // --- NEW STOCK IN AND OUT ROUTES ---
-    Route::post('/admin/inventory/stock-in', [ProductController::class, 'stockIn'])->name('inventory.stockIn');
-    Route::post('/admin/inventory/stock-out', [ProductController::class, 'stockOut'])->name('inventory.stockOut');
+    // --- BATCH MANAGEMENT ROUTES ---
+    Route::post('/admin/batches', [ProductController::class, 'storeBatch'])->name('admin.batches.store');
+    Route::delete('/admin/batches/{id}', [ProductController::class, 'destroyBatch'])->name('admin.batches.destroy');
 
     Route::get('/admin/inventory/viewProduct/{product_id}', [ProductController::class,'viewProduct'])
     ->name('inventory.viewProduct');
