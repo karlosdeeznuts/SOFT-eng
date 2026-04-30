@@ -100,9 +100,10 @@ class CartController extends Controller
 
             // FIFO Batch Deduction Logic
             $activeBatches = ProductBatch::where('product_id', $product->id)
-                ->where('status', 'active')
-                ->orderBy('received_at', 'asc')
-                ->get();
+    ->where('status', 'active')
+    // This pushes NULL (no expiry) to the bottom, and sorts the rest by closest expiry date
+    ->orderByRaw('ISNULL(expires_at), expires_at ASC') 
+    ->get();
 
             $remainingToDeduct = $totalPiecesToDeduct;
 
