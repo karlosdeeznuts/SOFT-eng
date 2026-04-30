@@ -6,7 +6,7 @@ use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Product;
-use App\Models\ProductBatch;
+use App\Models\ProductBatch; // Added ProductBatch import
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -22,6 +22,7 @@ class CartController extends Controller
 
         $user = auth()->user();
         $product = Product::find($request->product_id);
+
         $piecesNeeded = $request->quantity * $request->multiplier;
 
         if ($product->stocks < $piecesNeeded) {
@@ -78,28 +79,28 @@ class CartController extends Controller
             'change' => $fields['cash_received'] - $fields['total'],
         ]);
         
-        $totalOrderQuantity = 0;
+        $quantity = 0;
 
         foreach($fields['cart_id'] as $cart_id){
             $cart = Cart::where('id',$cart_id)->first();
-            $totalOrderQuantity += $cart->quantity; 
+            $quantity += $cart->quantity; 
 
             $product = Product::find($cart->product_id);
             $totalPiecesToDeduct = $cart->quantity * $cart->multiplier;
 
-            // FIFO Batch Deduction Logic
+            // FEFO (First Expired, First Out) Deduction Logic
             $activeBatches = ProductBatch::where('product_id', $product->id)
                 ->where('status', 'active')
                 ->orderByRaw('ISNULL(expires_at), expires_at ASC') 
                 ->get();
 
             $remainingToDeduct = $totalPiecesToDeduct;
-            $usedBatchIds = [];
+            $usedBatchIds = []; // NEW: Array to collect batch trail
 
             foreach ($activeBatches as $batch) {
                 if ($remainingToDeduct <= 0) break;
 
-                // Track the ID of every batch we touch
+                // Track the ID of every batch we extract flowers from
                 $usedBatchIds[] = "#" . str_pad($batch->id, 3, '0', STR_PAD_LEFT);
 
                 if ($batch->quantity <= $remainingToDeduct) {
@@ -111,6 +112,7 @@ class CartController extends Controller
                 }
             }
 
+            // Create detail with recorded Batch IDs
             OrderDetail::create([
                 'order_id' => $store_order->id,
                 'product_id' => $cart->product_id,
@@ -119,17 +121,17 @@ class CartController extends Controller
                 'multiplier' => $cart->multiplier,   
                 'quantity' => $cart->quantity,
                 'total' => $cart->subtotal,
-                'batch_ids' => implode(', ', $usedBatchIds), // Crucial: Saving the batch trail
+                'batch_ids' => implode(', ', $usedBatchIds), // SAVES: e.g., "#001, #004"
             ]);
 
-            // Sync product master stock
+            // Sync master stock
             $product->update([
                 'stocks' => $product->calculateActiveStock(),
             ]);
         }
 
         $updateOrder = Order::where('id',$store_order->id)->update([
-            'quantity' => $totalOrderQuantity,
+            'quantity' => $quantity,
         ]);
 
         if($updateOrder){

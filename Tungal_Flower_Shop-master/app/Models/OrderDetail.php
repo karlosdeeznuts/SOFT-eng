@@ -15,6 +15,7 @@ class OrderDetail extends Model
         'multiplier',
         'quantity',
         'total',
+        'batch_ids', // ADDED: Allows mass-assignment of the batch trail
     ];
 
     public function product(){
