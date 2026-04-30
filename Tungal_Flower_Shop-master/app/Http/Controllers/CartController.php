@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Product;
+use App\Models\ProductBatch; // Added ProductBatch import
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -97,8 +98,38 @@ class CartController extends Controller
             $product = Product::find($cart->product_id);
             $totalPiecesToDeduct = $cart->quantity * $cart->multiplier;
 
+            // FIFO Batch Deduction Logic
+            $activeBatches = ProductBatch::where('product_id', $product->id)
+                ->where('status', 'active')
+                ->orderBy('received_at', 'asc')
+                ->get();
+
+            $remainingToDeduct = $totalPiecesToDeduct;
+
+            foreach ($activeBatches as $batch) {
+                if ($remainingToDeduct <= 0) {
+                    break; 
+                }
+
+                if ($batch->quantity <= $remainingToDeduct) {
+                    // Batch doesn't have enough to cover the whole remainder, use it all and mark expired
+                    $remainingToDeduct -= $batch->quantity;
+                    $batch->update([
+                        'quantity' => 0,
+                        'status' => 'expired' 
+                    ]);
+                } else {
+                    // Batch has more than enough, deduct what is needed
+                    $batch->update([
+                        'quantity' => $batch->quantity - $remainingToDeduct
+                    ]);
+                    $remainingToDeduct = 0;
+                }
+            }
+
+            // Sync the base stocks column with the newly calculated active batches
             $product->update([
-                'stocks' => $product->stocks - $totalPiecesToDeduct,
+                'stocks' => $product->calculateActiveStock(),
             ]);
         }
 
