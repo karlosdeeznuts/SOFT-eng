@@ -9,7 +9,6 @@ class Product extends Model
 {
     use HasFactory;
 
-    // Updated to match your exact database columns
     protected $fillable = [
         'product_name',
         'description',
@@ -20,7 +19,6 @@ class Product extends Model
 
     /**
      * Get all types associated with this product.
-     * (Retaining this based on your React payload)
      */
     public function types()
     {
@@ -41,5 +39,22 @@ class Product extends Model
     public function calculateActiveStock()
     {
         return $this->batches()->where('status', 'active')->sum('quantity');
+    }
+
+    // ==========================================
+    // GLOBAL OVERRIDE FOR CASHIER POV & CART
+    // ==========================================
+    // This intercepts ANY request for the old 'stocks' column
+    // and automatically replaces it with the real batch total.
+    // Zero React changes required.
+    public function getStocksAttribute($value)
+    {
+        // If the controller already loaded batches, do the math in memory (fast)
+        if ($this->relationLoaded('batches')) {
+            return $this->batches->where('status', 'active')->sum('quantity');
+        }
+        
+        // Otherwise, query the database dynamically
+        return $this->calculateActiveStock();
     }
 }
