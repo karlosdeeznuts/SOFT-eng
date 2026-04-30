@@ -42,25 +42,9 @@ const ClockIcon = () => (
     </svg>
 );
 
-function Report({
-    // placeholder here brodie
-    stockAlerts = [
-        { id: 1, type: 'below_minimum', label: 'Below Minimum', product: 'Red Roses', units: 50, date: '3 days ago (Feb 4, 2025)' },
-        { id: 2, type: 'attention', label: 'Attention !', product: 'Yellow Daisy', units: 65, date: '4 days ago (Feb 3, 2025)' },
-        { id: 3, type: 'low_stock', label: 'Low Stock', product: 'Red Tulips', units: 25, date: '5 days ago (Feb 2, 2025)' },
-        { id: 4, type: 'out_of_stock', label: 'Out of Stock', product: 'Yellow Roses', units: 0, date: '6 days ago (Feb 1, 2025)' }
-    ],
-    salesOverview = {
-        totalSales: '13 699 000',
-        salesTrend: '5% vs last 30 days',
-        totalOrders: '153',
-        ordersTrend: '5% vs last 30 days',
-        avgSales: '1978',
-        avgTrend: '4% vs last 30 days'
-    }
-}) {
+// We removed the hardcoded fallback data. This now receives the live data from UserController
+function Report({ stockAlerts = [], salesOverview = {} }) {
 
-    // helper function for the severity
     const getAlertStyle = (type) => {
         switch(type) {
             case 'below_minimum':
@@ -104,28 +88,34 @@ function Report({
                     </div>
 
                     <div className="row g-4">
-                        {stockAlerts.map((alert) => {
-                            const style = getAlertStyle(alert.type);
-                            return (
-                                <div className="col-12 col-md-6 col-xl-3" key={alert.id}>
-                                    <div className="card h-100 border-0 shadow-sm text-center" style={{ backgroundColor: style.bg, borderRadius: '12px' }}>
-                                        <div className="card-body d-flex flex-column justify-content-center p-4">
-                                            <p className="fw-semibold mb-2" style={{ color: style.text, fontSize: '0.9rem' }}>
-                                                {alert.label} {alert.type === 'attention' && <AlertCircleIcon />}
-                                            </p>
-                                            <h3 className="fw-bold mb-3" style={{ color: style.text }}>{alert.product}</h3>
-                                            <h5 className="fw-bold mb-4" style={{ color: style.text }}>
-                                                {alert.units < 10 && alert.units > 0 ? `0${alert.units}` : alert.units === 0 ? '00' : alert.units} Units
-                                            </h5>
-                                            <div className="d-flex align-items-center justify-content-center gap-2 mt-auto" style={{ color: style.mutedText, fontSize: '0.8rem' }}>
-                                                <ClockIcon />
-                                                <span>{alert.date}</span>
+                        {stockAlerts.length > 0 ? (
+                            stockAlerts.map((alert) => {
+                                const style = getAlertStyle(alert.type);
+                                return (
+                                    <div className="col-12 col-md-6 col-xl-3" key={alert.id}>
+                                        <div className="card h-100 border-0 shadow-sm text-center" style={{ backgroundColor: style.bg, borderRadius: '12px' }}>
+                                            <div className="card-body d-flex flex-column justify-content-center p-4">
+                                                <p className="fw-semibold mb-2" style={{ color: style.text, fontSize: '0.9rem' }}>
+                                                    {alert.label} {alert.type === 'attention' && <AlertCircleIcon />}
+                                                </p>
+                                                <h3 className="fw-bold mb-3" style={{ color: style.text }}>{alert.product}</h3>
+                                                <h5 className="fw-bold mb-4" style={{ color: style.text }}>
+                                                    {alert.units < 10 && alert.units > 0 ? `0${alert.units}` : alert.units === 0 ? '00' : alert.units} Units
+                                                </h5>
+                                                <div className="d-flex align-items-center justify-content-center gap-2 mt-auto" style={{ color: style.mutedText, fontSize: '0.8rem' }}>
+                                                    <ClockIcon />
+                                                    <span>{alert.date}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })
+                        ) : (
+                            <div className="col-12 text-center py-4">
+                                <p className="text-muted fw-bold mb-0">Inventory levels are healthy. No critical alerts.</p>
+                            </div>
+                        )}
                     </div>
 
                 </div>
@@ -144,38 +134,38 @@ function Report({
                             <div className="card h-100 border-0 shadow-sm text-center" style={{ backgroundColor: '#1F2D5A', borderRadius: '12px' }}>
                                 <div className="card-body p-4">
                                     <p className="text-white-50 fw-semibold mb-3">Total Sales</p>
-                                    <h2 className="fw-bold text-white mb-4">₱ {salesOverview.totalSales}</h2>
+                                    <h2 className="fw-bold text-white mb-4">₱ {salesOverview.totalSales || '0'}</h2>
                                     <div className="d-flex align-items-center justify-content-center gap-2 fw-semibold" style={{ color: '#00D2FF' }}>
                                         <TrendUpIcon />
-                                        <span>{salesOverview.salesTrend}</span>
+                                        <span>{salesOverview.salesTrend || '0%'}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* total orders */}
+                        {/* Total Orders */}
                         <div className="col-12 col-md-4">
                             <div className="card h-100 border-0 shadow-sm text-center" style={{ backgroundColor: '#1F2D5A', borderRadius: '12px' }}>
                                 <div className="card-body p-4">
                                     <p className="text-white-50 fw-semibold mb-3">Total Orders</p>
-                                    <h2 className="fw-bold text-white mb-4">{salesOverview.totalOrders}</h2>
+                                    <h2 className="fw-bold text-white mb-4">{salesOverview.totalOrders || '0'}</h2>
                                     <div className="d-flex align-items-center justify-content-center gap-2 fw-semibold" style={{ color: '#00D2FF' }}>
                                         <TrendUpIcon />
-                                        <span>{salesOverview.ordersTrend}</span>
+                                        <span>{salesOverview.ordersTrend || '0%'}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* averagesales */}
+                        {/* Average Sales */}
                         <div className="col-12 col-md-4">
                             <div className="card h-100 border-0 shadow-sm text-center" style={{ backgroundColor: '#1F2D5A', borderRadius: '12px' }}>
                                 <div className="card-body p-4">
                                     <p className="text-white-50 fw-semibold mb-3">Average Sales</p>
-                                    <h2 className="fw-bold text-white mb-4">{salesOverview.avgSales}</h2>
+                                    <h2 className="fw-bold text-white mb-4">₱ {salesOverview.avgSales || '0'}</h2>
                                     <div className="d-flex align-items-center justify-content-center gap-2 fw-semibold" style={{ color: '#00D2FF' }}>
                                         <TrendUpIcon />
-                                        <span>{salesOverview.avgTrend}</span>
+                                        <span>{salesOverview.avgTrend || '0%'}</span>
                                     </div>
                                 </div>
                             </div>
@@ -183,7 +173,7 @@ function Report({
 
                     </div>
 
-                    {/* ownload buttons */}
+                    {/* Download buttons */}
                     <div className="d-flex justify-content-center gap-4">
                         <Link href="#" className="btn d-flex flex-column align-items-center justify-content-center fw-bold shadow-sm" style={{ backgroundColor: '#9CB4FA', color: '#1E1E1E', borderRadius: '10px', width: '220px', height: '80px' }}>
                             <span>Download</span>

@@ -3,23 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductBatch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
     public function showInventoryProduct(){
-        $products = Product::with('types')->latest()->paginate(6);
+        // FIXED: Eager load batches and the employee who made them
+        $products = Product::with(['types', 'batches.employee'])->latest()->paginate(6);
         return inertia('Admin/Inventory', ['products' => $products]);
     }
 
     public function displayProduct(){
-        $products = Product::with('types')->latest()->paginate(8);
+        // FIXED: Eager load batches for the customer/cashier side too
+        $products = Product::with(['types', 'batches'])->latest()->paginate(8);
         return inertia('Customer/Product', ['products' => $products]);
     }
 
     public function showProduct($product_id){
-        $product = Product::with('types')->find($product_id);
+        // FIXED: Eager load batches here too
+        $product = Product::with(['types', 'batches'])->find($product_id);
         return inertia('Customer/Product_Features/ShowProduct', ['product' => $product]);
     }
 
@@ -109,28 +114,38 @@ class ProductController extends Controller
         return redirect()->back()->with('success', 'Product deleted successfully.');
     }
 
-    public function stockIn(Request $request) {
+    // ==========================================
+    // NEW BATCH MANAGEMENT LOGIC
+    // ==========================================
+
+    public function storeBatch(Request $request)
+    {
         $request->validate([
-            'id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1'
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'expires_at' => 'nullable|date',
         ]);
-        $product = Product::findOrFail($request->id);
-        $product->stocks += $request->quantity;
-        $product->save();
-        return redirect()->back()->with('success', "Added {$request->quantity} stocks to {$product->product_name}.");
+
+        ProductBatch::create([
+            'product_id' => $request->product_id,
+            'quantity' => $request->quantity,
+            'expires_at' => $request->expires_at,
+            'employee_id' => Auth::id(), 
+            'status' => 'active',
+            'received_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Stock batch added successfully.');
     }
 
-    public function stockOut(Request $request) {
-        $request->validate([
-            'id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1'
+    public function destroyBatch($id)
+    {
+        $batch = ProductBatch::findOrFail($id);
+        
+        $batch->update([
+            'status' => 'manually_removed'
         ]);
-        $product = Product::findOrFail($request->id);
-        if ($product->stocks < $request->quantity) {
-            return redirect()->back()->with('error', "Not enough stock for {$product->product_name}.");
-        }
-        $product->stocks -= $request->quantity;
-        $product->save();
-        return redirect()->back()->with('success', "Removed {$request->quantity} stocks from {$product->product_name}.");
+
+        return redirect()->back()->with('success', 'Batch manually stocked out.');
     }
 }

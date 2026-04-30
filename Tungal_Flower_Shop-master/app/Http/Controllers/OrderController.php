@@ -9,11 +9,9 @@ use Illuminate\Http\Request;
 class OrderController extends Controller
 {
     public function orders() {
-        $user = auth()->user();
-    
-        // Eager load order details so each order includes its order_id from OrderDetail
-        $orders = Order::with('details') // assumes you defined a 'details' relationship
-            ->where('user_id', $user->id)
+        // We dropped the 'user' relationship here to stop the crash.
+        // It now only loads 'details' and fetches ALL orders globally.
+        $orders = Order::with('details') 
             ->latest()
             ->paginate(10);
     

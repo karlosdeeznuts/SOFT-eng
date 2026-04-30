@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('order_details', function (Blueprint $table) {
@@ -17,6 +20,7 @@ return new class extends Migration
             $table->integer('multiplier')->default(1);
             $table->integer('quantity');
             $table->decimal('total',10,2);
+            $table->text('batch_ids')->nullable(); // Column to store which batches the flowers came from
             $table->timestamps();
 
             $table->foreign('order_id')
@@ -25,6 +29,9 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('order_details');

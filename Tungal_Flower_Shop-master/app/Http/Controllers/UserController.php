@@ -43,22 +43,121 @@ class UserController extends Controller
     }
 
     public function dashboard(){
-        $sales_revenue = Order::sum('total');
-        $product_sold = Order::sum('quantity');
+        // 1. Top Metric Cards
+        $total_flowers_in_store = Product::sum('stocks');
+        $recent_orders_count = Order::where('created_at', '>=', now()->subDays(30))->count();
 
+        // 2. Sales Summary Chart (Top 7 for visual variety)
+        $chartData = OrderDetail::with('product')
+            ->selectRaw('product_id, SUM(quantity) as total_sales')
+            ->groupBy('product_id')
+            ->orderByDesc('total_sales')
+            ->take(7)
+            ->get();
+
+        // 3. Bottom Cards: Top 3 and Least 3
         $topSellingProducts = OrderDetail::with('product')
-        ->selectRaw('product_id, SUM(quantity) as total_sales')
-        ->groupBy('product_id')
-        ->orderByDesc('total_sales') 
-        ->get();
+            ->selectRaw('product_id, SUM(quantity) as total_sales')
+            ->groupBy('product_id')
+            ->orderByDesc('total_sales')
+            ->take(3)
+            ->get();
 
-        $inventoryLevels = Product::select('product_name', 'stocks')->get();
+        $leastSellingProducts = OrderDetail::with('product')
+            ->selectRaw('product_id, SUM(quantity) as total_sales')
+            ->groupBy('product_id')
+            ->orderBy('total_sales', 'asc') // Sort ascending for least sellers
+            ->take(3)
+            ->get();
+
+        // 4. Stock Numbers Summary
+        $low_stock_count = Product::where('stocks', '<=', 10)->count(); // Anything 10 or below is 'Low'
+        $total_categories = Product::count(); 
+        $recently_added = Product::where('created_at', '>=', now()->subDays(7))->count();
+        
+        // Using the newly created ReturnRequest model for the bridge we just built!
+        $returned_flowers = \App\Models\ReturnRequest::count();
 
         return inertia('Admin/Dashboard',[
-            'sales_revenue' => $sales_revenue,
-            'product_sold' => $product_sold,
+            'total_flowers_in_store' => $total_flowers_in_store,
+            'recent_orders_count' => $recent_orders_count,
+            'chartData' => $chartData,
             'topSellingProducts' => $topSellingProducts,
-            'inventoryLevels' => $inventoryLevels,
+            'leastSellingProducts' => $leastSellingProducts,
+            'low_stock_count' => $low_stock_count,
+            'total_categories' => $total_categories,
+            'recently_added' => $recently_added,
+            'returned_flowers' => $returned_flowers,
+        ]);
+    }
+
+    public function report(){
+        // 1. CRITICAL STOCK ALERTS
+        // Fetch products with 15 or less stock, ordered lowest first
+        $lowStockProducts = Product::where('stocks', '<=', 15)->orderBy('stocks', 'asc')->get();
+
+        $stockAlerts = $lowStockProducts->map(function($product) {
+            $type = 'attention';
+            $label = 'Attention !';
+
+            // Map database stock levels to your exact UI categories
+            if ($product->stocks == 0) {
+                $type = 'out_of_stock';
+                $label = 'Out of Stock';
+            } elseif ($product->stocks <= 5) {
+                $type = 'below_minimum';
+                $label = 'Below Minimum';
+            } elseif ($product->stocks <= 10) {
+                $type = 'low_stock';
+                $label = 'Low Stock';
+            }
+
+            return [
+                'id' => $product->id,
+                'type' => $type,
+                'label' => $label,
+                'product' => $product->product_name,
+                'units' => $product->stocks,
+                'date' => $product->updated_at->diffForHumans() . ' (' . $product->updated_at->format('M j, Y') . ')'
+            ];
+        });
+
+        // 2. SALES & CUSTOMERS OVERVIEW
+        $totalSales = Order::sum('total');
+        $totalOrders = Order::count();
+        $avgSales = $totalOrders > 0 ? $totalSales / $totalOrders : 0;
+
+        // Calculate Trends (Last 30 Days vs Previous 30 Days)
+        $current30Start = now()->subDays(30);
+        $prev30Start = now()->subDays(60);
+
+        // Sales Trend
+        $currentSales = Order::where('created_at', '>=', $current30Start)->sum('total');
+        $prevSales = Order::whereBetween('created_at', [$prev30Start, $current30Start])->sum('total');
+        $salesTrend = $prevSales > 0 ? round((($currentSales - $prevSales) / $prevSales) * 100) : 0;
+
+        // Orders Trend
+        $currentOrdersCount = Order::where('created_at', '>=', $current30Start)->count();
+        $prevOrdersCount = Order::whereBetween('created_at', [$prev30Start, $current30Start])->count();
+        $ordersTrend = $prevOrdersCount > 0 ? round((($currentOrdersCount - $prevOrdersCount) / $prevOrdersCount) * 100) : 0;
+
+        // Average Sales Trend
+        $currentAvg = $currentOrdersCount > 0 ? $currentSales / $currentOrdersCount : 0;
+        $prevAvg = $prevOrdersCount > 0 ? $prevSales / $prevOrdersCount : 0;
+        $avgTrend = $prevAvg > 0 ? round((($currentAvg - $prevAvg) / $prevAvg) * 100) : 0;
+
+        $salesOverview = [
+            'totalSales' => number_format($totalSales, 0, '.', ' '),
+            'salesTrend' => ($salesTrend >= 0 ? '+' : '') . $salesTrend . '% vs last 30 days',
+            'totalOrders' => number_format($totalOrders, 0, '.', ' '),
+            'ordersTrend' => ($ordersTrend >= 0 ? '+' : '') . $ordersTrend . '% vs last 30 days',
+            'avgSales' => number_format($avgSales, 0, '.', ' '),
+            'avgTrend' => ($avgTrend >= 0 ? '+' : '') . $avgTrend . '% vs last 30 days',
+        ];
+
+        return inertia('Admin/Report', [
+            'stockAlerts' => $stockAlerts,
+            'salesOverview' => $salesOverview
         ]);
     }
     

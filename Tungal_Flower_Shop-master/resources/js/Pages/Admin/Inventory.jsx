@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../Layout/AdminLayout';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { toast } from 'sonner';
 import AddProduct from './Inventory_Features/AddProduct'; 
 import UpdateProduct from './Inventory_Features/UpdateProduct';
 
-const SearchIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c757d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>);
+const SearchIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c757d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" cy="21" x2="16.65" y2="16.65"></line></svg>);
 const PlusIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>);
 const ArrowLeft = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>);
 const ArrowRight = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 19"></polyline></svg>);
@@ -38,14 +38,34 @@ function Inventory({ products }) {
 
     const [selectedFlower, setSelectedFlower] = useState(null);
 
+    // Batch Management State
+    const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+    const { data, setData, post, processing, errors, reset, transform } = useForm({
+        product_id: '',
+        quantity: '',
+        expiry_date: '',
+        expiry_time: '',
+    });
+    const { delete: destroy } = useForm();
+
     const productList = products?.data ? products.data : products || [];
+
+    // ACTIVE STATE SYNC
+    useEffect(() => {
+        if (selectedFlower) {
+            const freshFlowerData = productList.find(p => p.id === selectedFlower.id);
+            if (freshFlowerData) {
+                setSelectedFlower(freshFlowerData);
+            }
+        }
+    }, [products]);
 
     const filteredProducts = productList.filter((prod) => {
         const term = searchQuery.toLowerCase();
         return (
             (prod.product_name && prod.product_name.toLowerCase().includes(term)) ||
             (prod.description && prod.description.toLowerCase().includes(term)) ||
-            (prod.types && prod.types.some(t => t.name.toLowerCase().includes(term))) // FIXED: using 'name'
+            (prod.types && prod.types.some(t => t.name.toLowerCase().includes(term))) 
         );
     });
 
@@ -55,38 +75,56 @@ function Inventory({ products }) {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const displayedProducts = filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-    const handleStockIn = () => {
-        const qty = window.prompt(`How many stocks to ADD for ${selectedFlower.product_name}?`);
-        if (qty) {
-            const parsedQty = parseInt(qty);
-            if (!isNaN(parsedQty) && parsedQty > 0) {
-                router.post(route('inventory.stockIn'), { id: selectedFlower.id, quantity: parsedQty }, { preserveScroll: true });
-            } else {
-                toast.error("Please enter a valid number greater than 0.");
-            }
-        }
-    };
-
-    const handleStockOut = () => {
-        const qty = window.prompt(`How many stocks to REMOVE from ${selectedFlower.product_name}?`);
-        if (qty) {
-            const parsedQty = parseInt(qty);
-            if (!isNaN(parsedQty) && parsedQty > 0) {
-                if(selectedFlower.stocks < parsedQty){
-                    toast.error("You cannot remove more stock than what is available.");
-                    return;
-                }
-                router.post(route('inventory.stockOut'), { id: selectedFlower.id, quantity: parsedQty }, { preserveScroll: true });
-            } else {
-                toast.error("Please enter a valid number greater than 0.");
-            }
-        }
+    // Calculate Active Stock
+    const calculateTotalActiveStock = (product) => {
+        if (!product || !product.batches) return parseInt(product?.stocks) || 0;
+        return product.batches
+            .filter(batch => batch.status === 'active')
+            .reduce((sum, batch) => sum + parseInt(batch.quantity), 0);
     };
 
     const openUpdateModal = (e, product) => {
         e.stopPropagation(); 
         setFlowerToUpdate(product);
         setIsUpdateModalOpen(true);
+    };
+
+    // Batch Modal Handlers
+    const openBatchModal = () => {
+        if (!selectedFlower) return;
+        setData('product_id', selectedFlower.id);
+        setIsBatchModalOpen(true);
+    };
+
+    const closeBatchModal = () => {
+        setIsBatchModalOpen(false);
+        reset();
+    };
+
+    transform((data) => ({
+        ...data,
+        expires_at: data.expiry_date ? `${data.expiry_date} ${data.expiry_time || '23:59:59'}` : null,
+    }));
+
+    const handleAddBatch = (e) => {
+        e.preventDefault();
+        post(route('admin.batches.store'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                reset('quantity', 'expiry_date', 'expiry_time');
+                toast.success('Stock batch added successfully!');
+            },
+            onErrors: () => toast.error('Failed to add stock batch. Check your inputs.')
+        });
+    };
+
+    const handleStockOutBatch = (batchId) => {
+        if (confirm('Are you sure you want to manually stock out this batch? This will deduct the quantity from inventory.')) {
+            destroy(route('admin.batches.destroy', batchId), {
+                preserveScroll: true,
+                onSuccess: () => toast.success('Batch manually stocked out.')
+            });
+        }
     };
 
     return (
@@ -132,6 +170,7 @@ function Inventory({ products }) {
                             {displayedProducts.length > 0 ? (
                                 displayedProducts.map((product) => {
                                     const isSelected = selectedFlower?.id === product.id;
+                                    const activeStock = calculateTotalActiveStock(product);
 
                                     return (
                                         <tr 
@@ -168,11 +207,11 @@ function Inventory({ products }) {
                                             </td>
                                             <td className="py-3 px-4 text-dark fw-medium" style={{ fontSize: '12px' }}>
                                                 {product.types && product.types.length > 0 
-                                                    ? product.types.map(t => `${t.name} (x${t.multiplier})`).join(', ') // FIXED: using 'name'
+                                                    ? product.types.map(t => `${t.name} (x${t.multiplier})`).join(', ') 
                                                     : <span className="text-muted fst-italic">Base Unit Only</span>}
                                             </td>
                                             <td className="py-3 px-4">
-                                                <span className="fw-bold" style={{ fontSize: '14px', color: product.stocks > 0 ? '#1E1E1E' : '#DC3545' }}>{product.stocks || 0}</span>
+                                                <span className="fw-bold" style={{ fontSize: '14px', color: activeStock > 0 ? '#1E1E1E' : '#DC3545' }}>{activeStock}</span>
                                             </td>
                                             <td className="py-3 px-4 text-dark fw-bold" style={{ fontSize: '14px' }}>₱ {product.price}</td>
                                             
@@ -230,28 +269,155 @@ function Inventory({ products }) {
             <div className="d-flex flex-column align-items-end gap-2 mt-3">
                 <div className="d-flex gap-3">
                     <button 
-                        onClick={handleStockIn}
+                        onClick={openBatchModal}
                         disabled={!selectedFlower}
                         className="btn fw-bold text-white shadow-sm border-0 transition-all d-flex justify-content-center align-items-center" 
-                        style={{ backgroundColor: selectedFlower ? '#28A745' : '#A5D8B3', cursor: selectedFlower ? 'pointer' : 'not-allowed', borderRadius: '8px', height: '44px', width: '150px', fontSize: '15px' }}
+                        style={{ backgroundColor: selectedFlower ? '#7859FF' : '#B8A8FF', cursor: selectedFlower ? 'pointer' : 'not-allowed', borderRadius: '8px', height: '44px', width: '200px', fontSize: '15px' }}
                     >
-                        + Stock In
-                    </button>
-                    <button 
-                        onClick={handleStockOut}
-                        disabled={!selectedFlower}
-                        className="btn fw-bold text-white shadow-sm border-0 transition-all d-flex justify-content-center align-items-center" 
-                        style={{ backgroundColor: selectedFlower ? '#DC3545' : '#EAA9AF', cursor: selectedFlower ? 'pointer' : 'not-allowed', borderRadius: '8px', height: '44px', width: '150px', fontSize: '15px' }}
-                    >
-                        - Stock Out
+                        Manage Batches
                     </button>
                 </div>
                 {!selectedFlower ? (
-                    <small className="text-danger fw-bold mt-1" style={{fontSize: '12px'}}>* Click a row to unlock stock buttons</small>
+                    <small className="text-danger fw-bold mt-1" style={{fontSize: '12px'}}>* Click a row to unlock batch management</small>
                 ) : (
-                    <small className="text-success fw-bold mt-1" style={{fontSize: '12px'}}>✓ Ready to update: {selectedFlower.product_name}</small>
+                    <small className="text-success fw-bold mt-1" style={{fontSize: '12px'}}>✓ Ready to manage: {selectedFlower.product_name}</small>
                 )}
             </div>
+
+            {/* Batch Management Modal */}
+            {isBatchModalOpen && selectedFlower && (
+                <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
+                    <div className="modal-dialog modal-lg modal-dialog-centered">
+                        <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '16px' }}>
+                            <div className="modal-header border-0 pb-0">
+                                <h5 className="modal-title fw-bold" style={{ color: '#1E1E1E' }}>
+                                    Manage Batches: <span style={{ color: '#7859FF' }}>{selectedFlower.product_name}</span>
+                                </h5>
+                                <button type="button" className="btn-close shadow-none" onClick={closeBatchModal}></button>
+                            </div>
+                            
+                            <div className="modal-body px-4 py-4">
+                                {/* Add Batch Form */}
+                                <div className="p-3 mb-4 rounded-3" style={{ backgroundColor: '#F8F9FA', border: '1px solid #EBEAEE' }}>
+                                    <h6 className="fw-bold mb-3" style={{ fontSize: '14px', color: '#5A637A' }}>Add New Stock Batch</h6>
+                                    <form onSubmit={handleAddBatch} className="d-flex gap-3 align-items-end">
+                                        <div className="flex-grow-1" style={{ maxWidth: '120px' }}>
+                                            <label className="form-label mb-1 fw-medium" style={{ fontSize: '13px', color: '#5A637A' }}>Quantity</label>
+                                            <input 
+                                                type="number" 
+                                                min="1" 
+                                                className="form-control shadow-none" 
+                                                value={data.quantity} 
+                                                onChange={e => setData('quantity', e.target.value)} 
+                                                required 
+                                            />
+                                        </div>
+                                        <div className="flex-grow-1">
+                                            <label className="form-label mb-1 fw-medium" style={{ fontSize: '13px', color: '#5A637A' }}>Expiry Date (Optional)</label>
+                                            <div className="d-flex gap-2">
+                                                <input 
+                                                    type="date" 
+                                                    className="form-control shadow-none" 
+                                                    value={data.expiry_date} 
+                                                    onChange={e => setData('expiry_date', e.target.value)} 
+                                                />
+                                                <input 
+                                                    type="time" 
+                                                    className="form-control shadow-none" 
+                                                    value={data.expiry_time} 
+                                                    onChange={e => setData('expiry_time', e.target.value)} 
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <button 
+                                                type="submit" 
+                                                disabled={processing} 
+                                                className="btn text-white fw-semibold px-4 transition-all" 
+                                                style={{ backgroundColor: '#28A745', height: '38px', borderRadius: '8px' }}
+                                            >
+                                                {processing ? 'Adding...' : 'Stock In'}
+                                            </button>
+                                        </div>
+                                    </form>
+                                    {errors.quantity && <small className="text-danger mt-1 d-block">{errors.quantity}</small>}
+                                    {errors.expires_at && <small className="text-danger mt-1 d-block">{errors.expires_at}</small>}
+                                </div>
+
+                                {/* Batch History Table */}
+                                <h6 className="fw-bold mb-2" style={{ fontSize: '14px', color: '#5A637A' }}>Batch History</h6>
+                                <div className="table-responsive border rounded-3" style={{ maxHeight: '250px' }}>
+                                    <table className="table table-hover align-middle mb-0">
+                                        <thead className="bg-light sticky-top">
+                                            <tr>
+                                                <th className="py-2 px-3 text-muted fw-semibold" style={{ fontSize: '12px' }}>Batch ID</th>
+                                                <th className="py-2 px-3 text-muted fw-semibold" style={{ fontSize: '12px' }}>Date Received</th>
+                                                <th className="py-2 px-3 text-muted fw-semibold" style={{ fontSize: '12px' }}>Quantity</th>
+                                                <th className="py-2 px-3 text-muted fw-semibold" style={{ fontSize: '12px' }}>Expires At</th>
+                                                <th className="py-2 px-3 text-muted fw-semibold" style={{ fontSize: '12px' }}>Status</th>
+                                                <th className="py-2 px-3 text-muted fw-semibold text-end" style={{ fontSize: '12px', minWidth: '150px' }}>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {selectedFlower.batches && selectedFlower.batches.length > 0 ? (
+                                                selectedFlower.batches.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(batch => (
+                                                    <tr key={batch.id} style={{ opacity: batch.status !== 'active' ? 0.6 : 1 }}>
+                                                        <td className="px-3 fw-bold text-dark" style={{ fontSize: '13px' }}>
+                                                            #{String(batch.id).padStart(3, '0')}
+                                                        </td>
+                                                        <td className="px-3 text-dark" style={{ fontSize: '13px' }}>
+                                                            {new Date(batch.received_at).toLocaleDateString()}
+                                                        </td>
+                                                        <td className="px-3 fw-bold text-dark" style={{ fontSize: '13px' }}>
+                                                            {batch.quantity}
+                                                        </td>
+                                                        <td className="px-3 text-danger" style={{ fontSize: '13px' }}>
+                                                            {batch.expires_at ? new Date(batch.expires_at).toLocaleDateString() : 'N/A'}
+                                                        </td>
+                                                        <td className="px-3">
+                                                            {/* FIX: Status display logic updated to handle 'fully_sold' */}
+                                                            <span className={`badge rounded-pill ${batch.status === 'active' ? 'bg-success' : 'bg-secondary'}`} style={{ fontSize: '11px', fontWeight: '500' }}>
+                                                                {batch.status === 'manually_removed' 
+                                                                    ? 'REMOVED' 
+                                                                    : batch.status === 'fully_sold' 
+                                                                        ? 'FULLY SOLD' 
+                                                                        : batch.status.toUpperCase()}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-3 text-end">
+                                                            {batch.status === 'active' ? (
+                                                                <button 
+                                                                    onClick={() => handleStockOutBatch(batch.id)} 
+                                                                    className="btn btn-sm btn-outline-danger shadow-none" 
+                                                                    style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '6px' }}
+                                                                >
+                                                                    Stock Out
+                                                                </button>
+                                                            ) : (
+                                                                <div className="d-flex flex-column text-muted text-end" style={{ fontSize: '11px' }}>
+                                                                    {/* FIX: Label logic for sold vs expired */}
+                                                                    <span>{batch.status === 'manually_removed' ? 'Stocked out:' : (batch.status === 'fully_sold' ? 'Sold at:' : 'Expired:')}</span>
+                                                                    <span className="fw-medium">{formatLocalTime(batch.updated_at)}</span>
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan="6" className="text-center py-4 text-muted" style={{ fontSize: '13px' }}>
+                                                        No batches found for this product.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <AddProduct isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
             

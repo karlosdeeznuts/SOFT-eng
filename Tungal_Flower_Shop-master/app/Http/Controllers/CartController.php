@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Product;
+use App\Models\ProductBatch;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -84,6 +85,33 @@ class CartController extends Controller
             $cart = Cart::where('id',$cart_id)->first();
             $quantity += $cart->quantity; 
 
+            $product = Product::find($cart->product_id);
+            $totalPiecesToDeduct = $cart->quantity * $cart->multiplier;
+
+            // FEFO (First Expired, First Out) Logic
+            $activeBatches = ProductBatch::where('product_id', $product->id)
+                ->where('status', 'active')
+                ->orderByRaw('ISNULL(expires_at), expires_at ASC') 
+                ->get();
+
+            $remainingToDeduct = $totalPiecesToDeduct;
+            $usedBatchIds = [];
+
+            foreach ($activeBatches as $batch) {
+                if ($remainingToDeduct <= 0) break;
+
+                $usedBatchIds[] = "#" . str_pad($batch->id, 3, '0', STR_PAD_LEFT);
+
+                if ($batch->quantity <= $remainingToDeduct) {
+                    $remainingToDeduct -= $batch->quantity;
+                    // FIX: Changed status to 'fully_sold' instead of 'expired'
+                    $batch->update(['quantity' => 0, 'status' => 'fully_sold']);
+                } else {
+                    $batch->update(['quantity' => $batch->quantity - $remainingToDeduct]);
+                    $remainingToDeduct = 0;
+                }
+            }
+
             OrderDetail::create([
                 'order_id' => $store_order->id,
                 'product_id' => $cart->product_id,
@@ -92,13 +120,11 @@ class CartController extends Controller
                 'multiplier' => $cart->multiplier,   
                 'quantity' => $cart->quantity,
                 'total' => $cart->subtotal,
+                'batch_ids' => implode(', ', $usedBatchIds),
             ]);
 
-            $product = Product::find($cart->product_id);
-            $totalPiecesToDeduct = $cart->quantity * $cart->multiplier;
-
             $product->update([
-                'stocks' => $product->stocks - $totalPiecesToDeduct,
+                'stocks' => $product->calculateActiveStock(),
             ]);
         }
 
