@@ -5,7 +5,6 @@ import { IoReceipt } from "react-icons/io5";
 import { useRoute } from '../../../../vendor/tightenco/ziggy/';
 import { Toaster, toast } from 'sonner';
 
-// --- CUSTOM ICONS ---
 const ArrowLeft = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
 );
@@ -18,24 +17,17 @@ function Orders({ orders }) {
     const route = useRoute();
     const { flash } = usePage().props;
     const [searchQuery, setSearchQuery] = useState('');
-    
     const [refundStep, setRefundStep] = useState(0);
 
-    // FIXED: Upgraded from useState to Inertia's useForm to talk to the backend
     const { data, setData, post, processing, reset } = useForm({
         invoiceNum: '',
         reason: '',
         method: ''
     });
 
-    // Listen for backend flash messages (Success/Error from ReturnController)
     useEffect(() => {
-        if (flash?.success) {
-            toast.success(flash.success);
-        }
-        if (flash?.error) {
-            toast.error(flash.error);
-        }
+        if (flash?.success) toast.success(flash.success);
+        if (flash?.error) toast.error(flash.error);
     }, [flash]);
 
     const openReturnModal = (orderId) => {
@@ -51,14 +43,11 @@ function Orders({ orders }) {
     const nextStep = () => setRefundStep(prev => prev + 1);
     const prevStep = () => setRefundStep(prev => prev - 1);
 
-    // FIXED: Triggers the actual backend POST route
     const submitRefundRequest = (e) => {
         e.preventDefault();
         post(route('customer.return.store'), {
             preserveScroll: true,
-            onSuccess: () => {
-                handleCloseRefund();
-            }
+            onSuccess: () => handleCloseRefund()
         });
     };
 
@@ -66,13 +55,11 @@ function Orders({ orders }) {
         <div className="container-fluid py-4 px-4" style={{ minHeight: '100vh', backgroundColor: '#F5F5FB', fontFamily: "'Poppins', sans-serif" }}>
             <Toaster position="top-right" richColors expand={true} />
 
-            {/* HEADER SECTION */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h1 className="fw-bolder m-0" style={{ color: '#1E1E1E', fontSize: '32px', letterSpacing: '-0.5px' }}>Order History</h1>
                     <p className="text-muted m-0 mt-1 fw-medium">{orders.total} Total Orders</p>
                 </div>
-                
                 <div className="position-relative">
                     <input 
                         type="text" 
@@ -85,20 +72,19 @@ function Orders({ orders }) {
                 </div>
             </div>
 
-            {/* TABLE SECTION */}
             <div className="bg-white rounded-3 shadow-sm overflow-hidden">
                 <div className="table-responsive">
                     <table className="table table-borderless align-middle mb-0 text-center">
                         <thead style={{ backgroundColor: '#E3E4ED', color: '#1E1E1E' }}>
                             <tr>
-                                <th className="py-3 fw-bolder" style={{ fontSize: '14px', width: '10%' }}>Order ID</th>
-                                <th className="py-3 fw-bolder" style={{ fontSize: '14px' }}>Quantity</th>
-                                <th className="py-3 fw-bolder" style={{ fontSize: '14px' }}>Total</th>
-                                <th className="py-3 fw-bolder" style={{ fontSize: '14px' }}>Cash Recv.</th>
-                                <th className="py-3 fw-bolder" style={{ fontSize: '14px' }}>Change</th>
-                                <th className="py-3 fw-bolder" style={{ fontSize: '14px' }}>Date</th>
-                                <th className="py-3 fw-bolder" style={{ fontSize: '14px' }}>Status</th>
-                                <th className="py-3 fw-bolder" style={{ fontSize: '14px', width: '15%' }}>Action</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '13px' }}>Order ID</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '13px' }}>Order Qty</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '13px' }}>Total Pieces</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '13px' }}>Source Batches</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '13px' }}>Total Amount</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '13px' }}>Date</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '13px' }}>Status</th>
+                                <th className="py-3 fw-bolder" style={{ fontSize: '13px' }}>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -109,27 +95,33 @@ function Orders({ orders }) {
                                     });
 
                                     const orderId = order.details.length > 0 ? order.details[0].order_id : order.id;
+                                    
+                                    // CALCULATE TOTAL PIECES DEDUCTED
+                                    const totalPieces = order.details.reduce((sum, detail) => 
+                                        sum + (detail.quantity * detail.multiplier), 0);
+
+                                    // COLLECT UNIQUE BATCH IDS ACROSS ALL DETAILS
+                                    const batchList = [...new Set(order.details.map(d => d.batch_ids).filter(b => b))].join('; ');
 
                                     return (
                                         <tr key={order.id} style={{ borderBottom: index !== orders.data.length - 1 ? '1px solid #F0F0F5' : 'none' }}>
-                                            <td className="py-3 fw-bolder text-dark" style={{ fontSize: '14px' }}>{orderId ? `#TUNGAL${orderId}` : 'N/A'}</td>
-                                            <td className="py-3 fw-bold text-dark" style={{ fontSize: '14px' }}>{order.quantity}</td>
-                                            <td className="py-3 text-dark" style={{ fontSize: '14px' }}>₱{order.total}</td>
-                                            <td className="py-3 text-dark" style={{ fontSize: '14px' }}>₱{order.cash_recieved}</td>
-                                            <td className="py-3 text-dark" style={{ fontSize: '14px' }}>₱{order.change}</td>
-                                            <td className="py-3 text-dark" style={{ fontSize: '13px' }}>{formattedDate}</td>
+                                            <td className="py-3 fw-bolder text-dark" style={{ fontSize: '13px' }}>{orderId ? `#TUNGAL${orderId}` : 'N/A'}</td>
+                                            <td className="py-3 fw-bold text-dark" style={{ fontSize: '13px' }}>{order.quantity} Units</td>
+                                            <td className="py-3 text-primary fw-bold" style={{ fontSize: '13px' }}>{totalPieces} Pieces</td>
+                                            <td className="py-3 text-muted" style={{ fontSize: '11px' }}>{batchList || 'N/A'}</td>
+                                            <td className="py-3 text-dark fw-bold" style={{ fontSize: '13px' }}>₱{order.total}</td>
+                                            <td className="py-3 text-dark" style={{ fontSize: '12px' }}>{formattedDate}</td>
                                             <td className="py-3">
-                                                <span className="badge bg-success-subtle text-success px-3 py-2 rounded-pill">{order.order_status}</span>
+                                                <span className="badge bg-success-subtle text-success px-3 py-2 rounded-pill" style={{ fontSize: '11px' }}>{order.order_status}</span>
                                             </td>
                                             <td className="py-3">
                                                 <div className="d-flex align-items-center justify-content-center gap-2">
                                                     {orderId && (
-                                                        <Link href={route('customer.invoice', { order_id: orderId })} className="btn btn-sm btn-light shadow-sm d-flex align-items-center justify-content-center" style={{ width: '34px', height: '34px', borderRadius: '8px' }} title="View Invoice">
+                                                        <Link href={route('customer.invoice', { order_id: orderId })} className="btn btn-sm btn-light shadow-sm d-flex align-items-center justify-content-center" style={{ width: '34px', height: '34px', borderRadius: '8px' }}>
                                                             <IoReceipt className="fs-5 text-dark" />
                                                         </Link>
                                                     )}
-                                                    {/* Return/Refund Button triggers multi-step modal */}
-                                                    <button onClick={() => openReturnModal(orderId)} className="btn btn-sm d-inline-flex align-items-center justify-content-center gap-1 fw-semibold shadow-sm text-white" style={{ backgroundColor: '#D9534F', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', border: 'none' }} title="Request Refund">
+                                                    <button onClick={() => openReturnModal(orderId)} className="btn btn-sm text-white" style={{ backgroundColor: '#D9534F', borderRadius: '8px', fontSize: '11px', border: 'none' }}>
                                                         Refund
                                                     </button>
                                                 </div>
@@ -147,10 +139,9 @@ function Orders({ orders }) {
                 </div>
             </div>
 
-            {/* CUSTOM STYLED PAGINATION */}
             {orders.data.length > 0 && (
                 <div className="d-flex justify-content-between align-items-center mt-4">
-                    <span className="text-muted fw-medium" style={{ fontSize: '14px' }}>
+                    <span className="text-muted fw-medium" style={{ fontSize: '13px' }}>
                         Showing {orders.from || 0} to {orders.to || 0} of {orders.total} Entries
                     </span>
                     <div className="d-flex align-items-center gap-2">
@@ -161,39 +152,31 @@ function Orders({ orders }) {
                                     href={link.url}
                                     className={`d-flex justify-content-center align-items-center fw-bolder shadow-sm text-decoration-none ${link.active ? 'text-white' : 'text-dark bg-white'}`}
                                     style={{ 
-                                        width: '36px', height: '36px', 
+                                        width: '32px', height: '32px', 
                                         backgroundColor: link.active ? '#758AF8' : '#FFF',
-                                        borderRadius: '8px', fontSize: '14px',
+                                        borderRadius: '8px', fontSize: '13px',
                                         border: link.active ? 'none' : '1px solid #EBEAEE'
                                     }}
                                     preserveScroll
                                     dangerouslySetInnerHTML={{ __html: link.label.replace('Previous', '&laquo;').replace('Next', '&raquo;') }}
                                 />
                             ) : (
-                                <span
-                                    key={index}
-                                    className="d-flex justify-content-center align-items-center text-muted bg-light"
-                                    style={{ width: '36px', height: '36px', borderRadius: '8px', fontSize: '14px', border: '1px solid #EBEAEE' }}
-                                    dangerouslySetInnerHTML={{ __html: link.label.replace('Previous', '&laquo;').replace('Next', '&raquo;') }}
-                                />
+                                <span key={index} className="d-flex justify-content-center align-items-center text-muted bg-light" style={{ width: '32px', height: '32px', borderRadius: '8px', fontSize: '13px', border: '1px solid #EBEAEE' }} dangerouslySetInnerHTML={{ __html: link.label.replace('Previous', '&laquo;').replace('Next', '&raquo;') }} />
                             )
                         ))}
                     </div>
                 </div>
             )}
 
-            {/* MULTI-STEP REFUND REQUEST MODAL */}
             {refundStep > 0 && (
                 <div className="modal fade show d-block position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050 }}>
                     <div className="card shadow-lg border-0" style={{ borderRadius: '16px', width: '100%', maxWidth: '450px', backgroundColor: '#FFF' }}>
-                        
                         <div className="card-header border-0 text-white p-4" style={{ backgroundColor: '#7DA0FA', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
                             <h4 className="modal-title fw-bold m-0 d-flex justify-content-between align-items-center">
                                 {refundStep === 1 || refundStep === 3 ? 'Request Refund' : 'Choose Refund Method'}
                                 <button type="button" className="btn-close btn-close-white" onClick={handleCloseRefund}></button>
                             </h4>
                         </div>
-
                         <div className="card-body p-4 p-md-5">
                             {refundStep === 1 && (
                                 <div>
@@ -207,12 +190,11 @@ function Orders({ orders }) {
                                         <textarea className="form-control shadow-none" rows="4" style={{ borderRadius: '8px', backgroundColor: '#F8F9FA', resize: 'none' }} value={data.reason} onChange={e => setData('reason', e.target.value)}></textarea>
                                     </div>
                                     <div className="d-flex justify-content-end gap-3 mt-4">
-                                        <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={handleCloseRefund} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Cancel</button>
-                                        <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={nextStep} disabled={!data.invoiceNum || !data.reason} style={{ backgroundColor: '#7DA0FA', borderRadius: '8px', width: '120px' }}>Next</button>
+                                        <button type="button" className="btn fw-bold px-4 text-white" onClick={handleCloseRefund} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Cancel</button>
+                                        <button type="button" className="btn fw-bold px-4 text-white" onClick={nextStep} disabled={!data.invoiceNum || !data.reason} style={{ backgroundColor: '#7DA0FA', borderRadius: '8px', width: '120px' }}>Next</button>
                                     </div>
                                 </div>
                             )}
-
                             {refundStep === 2 && (
                                 <div>
                                     <p className="text-muted fw-medium mb-4" style={{ fontSize: '14px' }}>How would you like to receive your refund?</p>
@@ -226,12 +208,11 @@ function Orders({ orders }) {
                                         </select>
                                     </div>
                                     <div className="d-flex justify-content-end gap-3 mt-4">
-                                        <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={prevStep} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Back</button>
-                                        <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={nextStep} disabled={!data.method} style={{ backgroundColor: '#7DA0FA', borderRadius: '8px', width: '120px' }}>Next</button>
+                                        <button type="button" className="btn fw-bold px-4 text-white" onClick={prevStep} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Back</button>
+                                        <button type="button" className="btn fw-bold px-4 text-white" onClick={nextStep} disabled={!data.method} style={{ backgroundColor: '#7DA0FA', borderRadius: '8px', width: '120px' }}>Next</button>
                                     </div>
                                 </div>
                             )}
-
                             {refundStep === 3 && (
                                 <form onSubmit={submitRefundRequest}>
                                     <p className="text-muted fw-medium mb-4" style={{ fontSize: '14px' }}>Please confirm the details below.</p>
@@ -250,8 +231,8 @@ function Orders({ orders }) {
                                         </div>
                                     </div>
                                     <div className="d-flex justify-content-end gap-3 mt-4">
-                                        <button type="button" className="btn fw-bold px-4 text-white shadow-none" onClick={prevStep} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Back</button>
-                                        <button type="submit" disabled={processing} className="btn fw-bold px-4 text-white shadow-none" style={{ backgroundColor: '#28A745', borderRadius: '8px', width: '120px' }}>
+                                        <button type="button" className="btn fw-bold px-4 text-white" onClick={prevStep} style={{ backgroundColor: '#DC3545', borderRadius: '8px', width: '120px' }}>Back</button>
+                                        <button type="submit" disabled={processing} className="btn fw-bold px-4 text-white" style={{ backgroundColor: '#28A745', borderRadius: '8px', width: '120px' }}>
                                             {processing ? 'Confirming...' : 'Confirm'}
                                         </button>
                                     </div>
@@ -261,7 +242,6 @@ function Orders({ orders }) {
                     </div>
                 </div>
             )}
-
         </div>
     );
 }

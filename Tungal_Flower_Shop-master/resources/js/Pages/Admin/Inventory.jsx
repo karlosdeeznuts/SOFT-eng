@@ -115,7 +115,7 @@ function Inventory({ products }) {
                 reset('quantity', 'expiry_date', 'expiry_time');
                 toast.success('Stock batch added successfully!');
             },
-            onError: () => toast.error('Failed to add stock batch. Check your inputs.')
+            onErrors: () => toast.error('Failed to add stock batch. Check your inputs.')
         });
     };
 
@@ -351,6 +351,7 @@ function Inventory({ products }) {
                                     <table className="table table-hover align-middle mb-0">
                                         <thead className="bg-light sticky-top">
                                             <tr>
+                                                <th className="py-2 px-3 text-muted fw-semibold" style={{ fontSize: '12px' }}>Batch ID</th>
                                                 <th className="py-2 px-3 text-muted fw-semibold" style={{ fontSize: '12px' }}>Date Received</th>
                                                 <th className="py-2 px-3 text-muted fw-semibold" style={{ fontSize: '12px' }}>Quantity</th>
                                                 <th className="py-2 px-3 text-muted fw-semibold" style={{ fontSize: '12px' }}>Expires At</th>
@@ -362,6 +363,9 @@ function Inventory({ products }) {
                                             {selectedFlower.batches && selectedFlower.batches.length > 0 ? (
                                                 selectedFlower.batches.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(batch => (
                                                     <tr key={batch.id} style={{ opacity: batch.status !== 'active' ? 0.6 : 1 }}>
+                                                        <td className="px-3 fw-bold text-dark" style={{ fontSize: '13px' }}>
+                                                            #{String(batch.id).padStart(3, '0')}
+                                                        </td>
                                                         <td className="px-3 text-dark" style={{ fontSize: '13px' }}>
                                                             {new Date(batch.received_at).toLocaleDateString()}
                                                         </td>
@@ -396,7 +400,7 @@ function Inventory({ products }) {
                                                 ))
                                             ) : (
                                                 <tr>
-                                                    <td colSpan="5" className="text-center py-4 text-muted" style={{ fontSize: '13px' }}>
+                                                    <td colSpan="6" className="text-center py-4 text-muted" style={{ fontSize: '13px' }}>
                                                         No batches found for this product.
                                                     </td>
                                                 </tr>
