@@ -78,11 +78,11 @@ class CartController extends Controller
             'change' => $fields['cash_received'] - $fields['total'],
         ]);
         
-        $quantity = 0;
+        $totalOrderQuantity = 0;
 
         foreach($fields['cart_id'] as $cart_id){
             $cart = Cart::where('id',$cart_id)->first();
-            $quantity += $cart->quantity; 
+            $totalOrderQuantity += $cart->quantity; 
 
             $product = Product::find($cart->product_id);
             $totalPiecesToDeduct = $cart->quantity * $cart->multiplier;
@@ -99,6 +99,7 @@ class CartController extends Controller
             foreach ($activeBatches as $batch) {
                 if ($remainingToDeduct <= 0) break;
 
+                // Track the ID of every batch we touch
                 $usedBatchIds[] = "#" . str_pad($batch->id, 3, '0', STR_PAD_LEFT);
 
                 if ($batch->quantity <= $remainingToDeduct) {
@@ -118,16 +119,17 @@ class CartController extends Controller
                 'multiplier' => $cart->multiplier,   
                 'quantity' => $cart->quantity,
                 'total' => $cart->subtotal,
-                'batch_ids' => implode(', ', $usedBatchIds), // SAVE THE BATCH IDS HERE
+                'batch_ids' => implode(', ', $usedBatchIds), // Crucial: Saving the batch trail
             ]);
 
+            // Sync product master stock
             $product->update([
                 'stocks' => $product->calculateActiveStock(),
             ]);
         }
 
         $updateOrder = Order::where('id',$store_order->id)->update([
-            'quantity' => $quantity,
+            'quantity' => $totalOrderQuantity,
         ]);
 
         if($updateOrder){

@@ -2179,3 +2179,34 @@
 #62 C:\\xampp\\htdocs\\SOFT-eng\\Tungal_Flower_Shop-master\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\resources\\server.php(23): require_once('C:\\\\xampp\\\\htdocs...')
 #63 {main}
 "} 
+[2026-04-30 23:03:20] local.ERROR: Command "migrate:seed" is not defined.
+
+Did you mean one of these?
+    db:seed
+    make:seeder
+    migrate
+    migrate:fresh
+    migrate:install
+    migrate:refresh
+    migrate:reset
+    migrate:rollback
+    migrate:status {"exception":"[object] (Symfony\\Component\\Console\\Exception\\CommandNotFoundException(code: 0): Command \"migrate:seed\" is not defined.
+
+Did you mean one of these?
+    db:seed
+    make:seeder
+    migrate
+    migrate:fresh
+    migrate:install
+    migrate:refresh
+    migrate:reset
+    migrate:rollback
+    migrate:status at C:\\xampp\\htdocs\\SOFT-eng\\Tungal_Flower_Shop-master\\vendor\\symfony\\console\\Application.php:726)
+[stacktrace]
+#0 C:\\xampp\\htdocs\\SOFT-eng\\Tungal_Flower_Shop-master\\vendor\\symfony\\console\\Application.php(284): Symfony\\Component\\Console\\Application->find('migrate:seed')
+#1 C:\\xampp\\htdocs\\SOFT-eng\\Tungal_Flower_Shop-master\\vendor\\symfony\\console\\Application.php(193): Symfony\\Component\\Console\\Application->doRun(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#2 C:\\xampp\\htdocs\\SOFT-eng\\Tungal_Flower_Shop-master\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Console\\Kernel.php(198): Symfony\\Component\\Console\\Application->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#3 C:\\xampp\\htdocs\\SOFT-eng\\Tungal_Flower_Shop-master\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php(1235): Illuminate\\Foundation\\Console\\Kernel->handle(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#4 C:\\xampp\\htdocs\\SOFT-eng\\Tungal_Flower_Shop-master\\artisan(16): Illuminate\\Foundation\\Application->handleCommand(Object(Symfony\\Component\\Console\\Input\\ArgvInput))
+#5 {main}
+"} 

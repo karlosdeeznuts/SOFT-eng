@@ -94,21 +94,23 @@ function Orders({ orders }) {
                                         month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true,
                                     });
 
-                                    const orderId = order.details.length > 0 ? order.details[0].order_id : order.id;
+                                    const orderIdDisplay = order.id;
                                     
-                                    // CALCULATE TOTAL PIECES DEDUCTED
-                                    const totalPieces = order.details.reduce((sum, detail) => 
-                                        sum + (detail.quantity * detail.multiplier), 0);
+                                    // RENAMED LOGIC: Calculate actual flowers bought (Quantity * Multiplier)
+                                    const totalPiecesBought = order.details ? order.details.reduce((sum, d) => 
+                                        sum + (parseInt(d.quantity) * parseInt(d.multiplier)), 0) : 0;
 
-                                    // COLLECT UNIQUE BATCH IDS ACROSS ALL DETAILS
-                                    const batchList = [...new Set(order.details.map(d => d.batch_ids).filter(b => b))].join('; ');
+                                    // FIX: Correctly extract unique batch IDs from nested order details
+                                    const allUsedBatches = order.details 
+                                        ? [...new Set(order.details.flatMap(d => d.batch_ids ? d.batch_ids.split(', ') : []))].join(', ')
+                                        : 'N/A';
 
                                     return (
                                         <tr key={order.id} style={{ borderBottom: index !== orders.data.length - 1 ? '1px solid #F0F0F5' : 'none' }}>
-                                            <td className="py-3 fw-bolder text-dark" style={{ fontSize: '13px' }}>{orderId ? `#TUNGAL${orderId}` : 'N/A'}</td>
+                                            <td className="py-3 fw-bolder text-dark" style={{ fontSize: '13px' }}>{`#TUNGAL${orderIdDisplay}`}</td>
                                             <td className="py-3 fw-bold text-dark" style={{ fontSize: '13px' }}>{order.quantity} Units</td>
-                                            <td className="py-3 text-primary fw-bold" style={{ fontSize: '13px' }}>{totalPieces} Pieces</td>
-                                            <td className="py-3 text-muted" style={{ fontSize: '11px' }}>{batchList || 'N/A'}</td>
+                                            <td className="py-3 text-primary fw-bold" style={{ fontSize: '13px' }}>{totalPiecesBought} Pieces</td>
+                                            <td className="py-3 text-muted" style={{ fontSize: '11px' }}>{allUsedBatches || 'N/A'}</td>
                                             <td className="py-3 text-dark fw-bold" style={{ fontSize: '13px' }}>₱{order.total}</td>
                                             <td className="py-3 text-dark" style={{ fontSize: '12px' }}>{formattedDate}</td>
                                             <td className="py-3">
@@ -116,12 +118,10 @@ function Orders({ orders }) {
                                             </td>
                                             <td className="py-3">
                                                 <div className="d-flex align-items-center justify-content-center gap-2">
-                                                    {orderId && (
-                                                        <Link href={route('customer.invoice', { order_id: orderId })} className="btn btn-sm btn-light shadow-sm d-flex align-items-center justify-content-center" style={{ width: '34px', height: '34px', borderRadius: '8px' }}>
-                                                            <IoReceipt className="fs-5 text-dark" />
-                                                        </Link>
-                                                    )}
-                                                    <button onClick={() => openReturnModal(orderId)} className="btn btn-sm text-white" style={{ backgroundColor: '#D9534F', borderRadius: '8px', fontSize: '11px', border: 'none' }}>
+                                                    <Link href={route('customer.invoice', { order_id: order.id })} className="btn btn-sm btn-light shadow-sm d-flex align-items-center justify-content-center" style={{ width: '34px', height: '34px', borderRadius: '8px' }}>
+                                                        <IoReceipt className="fs-5 text-dark" />
+                                                    </Link>
+                                                    <button onClick={() => openReturnModal(order.id)} className="btn btn-sm text-white" style={{ backgroundColor: '#D9534F', borderRadius: '8px', fontSize: '11px', border: 'none' }}>
                                                         Refund
                                                     </button>
                                                 </div>
