@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import AddProduct from './Inventory_Features/AddProduct'; 
 import UpdateProduct from './Inventory_Features/UpdateProduct';
 
-const SearchIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c757d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>);
+const SearchIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c757d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" cy="21" x2="16.65" y2="16.65"></line></svg>);
 const PlusIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>);
 const ArrowLeft = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>);
 const ArrowRight = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 19"></polyline></svg>);
@@ -50,7 +50,7 @@ function Inventory({ products }) {
 
     const productList = products?.data ? products.data : products || [];
 
-    // ACTIVE STATE SYNC: This forces the selected flower to update its batches immediately after an Inertia refresh
+    // ACTIVE STATE SYNC
     useEffect(() => {
         if (selectedFlower) {
             const freshFlowerData = productList.find(p => p.id === selectedFlower.id);
@@ -101,7 +101,6 @@ function Inventory({ products }) {
         reset();
     };
 
-    // Transform payload before sending so we merge the custom split Date & Time into a single timestamp
     transform((data) => ({
         ...data,
         expires_at: data.expiry_date ? `${data.expiry_date} ${data.expiry_time || '23:59:59'}` : null,
@@ -376,8 +375,13 @@ function Inventory({ products }) {
                                                             {batch.expires_at ? new Date(batch.expires_at).toLocaleDateString() : 'N/A'}
                                                         </td>
                                                         <td className="px-3">
+                                                            {/* FIX: Status display logic updated to handle 'fully_sold' */}
                                                             <span className={`badge rounded-pill ${batch.status === 'active' ? 'bg-success' : 'bg-secondary'}`} style={{ fontSize: '11px', fontWeight: '500' }}>
-                                                                {batch.status === 'manually_removed' ? 'REMOVED' : batch.status.toUpperCase()}
+                                                                {batch.status === 'manually_removed' 
+                                                                    ? 'REMOVED' 
+                                                                    : batch.status === 'fully_sold' 
+                                                                        ? 'FULLY SOLD' 
+                                                                        : batch.status.toUpperCase()}
                                                             </span>
                                                         </td>
                                                         <td className="px-3 text-end">
@@ -391,7 +395,8 @@ function Inventory({ products }) {
                                                                 </button>
                                                             ) : (
                                                                 <div className="d-flex flex-column text-muted text-end" style={{ fontSize: '11px' }}>
-                                                                    <span>{batch.status === 'manually_removed' ? 'Stocked out:' : 'Expired:'}</span>
+                                                                    {/* FIX: Label logic for sold vs expired */}
+                                                                    <span>{batch.status === 'manually_removed' ? 'Stocked out:' : (batch.status === 'fully_sold' ? 'Sold at:' : 'Expired:')}</span>
                                                                     <span className="fw-medium">{formatLocalTime(batch.updated_at)}</span>
                                                                 </div>
                                                             )}

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->integer('multiplier')->default(1);
             $table->integer('quantity');
             $table->decimal('total',10,2);
-            $table->text('batch_ids')->nullable(); // ADDED: Stores the list of batches used for this specific item
+            $table->text('batch_ids')->nullable(); // Column to store which batches the flowers came from
             $table->timestamps();
 
             $table->foreign('order_id')
