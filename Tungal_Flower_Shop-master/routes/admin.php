@@ -15,9 +15,6 @@ Route::middleware(['auth',AdminMiddleware::class])->group(function () {
 
     Route::get('/admin/returns', [App\Http\Controllers\ReturnController::class, 'index'])->name('admin.returns');
 
-    Route::get('/admin/payroll', function () {
-        return inertia('Admin/Payroll');
-    })->name('admin.payroll');
 
     // ----------------------------------------------------------------------------
 
