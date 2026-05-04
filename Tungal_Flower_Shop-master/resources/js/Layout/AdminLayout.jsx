@@ -51,6 +51,13 @@ export default function AdminLayout({ children }) {
                                 <BsBoxSeam className="fs-5" /> Inventory
                             </Link>
                         )}
+
+                        {/* NEW: Sales History */}
+                        {(role === 'Admin' || role === 'Manager' || role === 'Owner') && (
+                            <Link href={route('admin.sales')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.sales') ? activeLinkStyle : inactiveLinkStyle}>
+                                <BsCashStack className="fs-5" /> Sales
+                            </Link>
+                        )}
                         
                         {/* Admin & Owner */}
                         {(role === 'Admin' || role === 'Owner') && (
@@ -59,18 +66,11 @@ export default function AdminLayout({ children }) {
                             </Link>
                         )}
                         
-                        {/* Admin Only */}
-                        {role === 'Admin' && (
-                            <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
-                                <BsTruck className="fs-5" /> Supplier
-                            </Link>
-                        )}
-                        
                         {/* Admin & Manager */}
                         {(role === 'Admin' || role === 'Manager') && (
                             <Link href={route('admin.returns')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.returns') ? activeLinkStyle : inactiveLinkStyle}>
-    <BsArrowReturnLeft className="fs-5" /> Returns
-</Link>
+                                <BsArrowReturnLeft className="fs-5" /> Returns
+                            </Link>
                         )}
                         
                         {/* Admin Only */}
@@ -79,7 +79,6 @@ export default function AdminLayout({ children }) {
                                 <IoPeople className="fs-5" /> Employee
                             </Link>
                         )}
-                        
                         
                         {/* Owner Only */}
                         {role === 'Owner' && (
@@ -132,6 +131,13 @@ export default function AdminLayout({ children }) {
                                     <BsBoxSeam /> Inventory
                                 </Link>
                             )}
+
+                            {/* NEW: Sales History (Mobile) */}
+                            {(role === 'Admin' || role === 'Manager' || role === 'Owner') && (
+                                <Link href={route('admin.sales')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.sales') ? activeLinkStyle : inactiveLinkStyle}>
+                                    <BsCashStack /> Sales
+                                </Link>
+                            )}
                             
                             {(role === 'Admin' || role === 'Owner') && (
                                 <Link href={route('admin.report')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.report') ? activeLinkStyle : inactiveLinkStyle}>
@@ -139,9 +145,21 @@ export default function AdminLayout({ children }) {
                                 </Link>
                             )}
                             
+                            {(role === 'Admin' || role === 'Manager') && (
+                                <Link href={route('admin.returns')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.returns') ? activeLinkStyle : inactiveLinkStyle}>
+                                    <BsArrowReturnLeft /> Returns
+                                </Link>
+                            )}
+
                             {role === 'Admin' && (
                                 <Link href={route('admin.employee')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.employee') ? activeLinkStyle : inactiveLinkStyle}>
                                     <IoPeople /> Employee
+                                </Link>
+                            )}
+
+                            {role === 'Owner' && (
+                                <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
+                                    <BsPersonCheck className="fs-5" /> Approvals
                                 </Link>
                             )}
 

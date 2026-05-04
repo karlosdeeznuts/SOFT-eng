@@ -26,7 +26,6 @@ class UserController extends Controller
 
             $user = Auth::user(); 
 
-            // Group the dashboard routes cleanly using arrays
             if(in_array($user->role, ['Admin', 'Manager', 'Owner'])){
                 return redirect()->intended('/admin/dashboard');
             }elseif(in_array($user->role, ['Cashier', 'Employee'])){
@@ -43,14 +42,11 @@ class UserController extends Controller
     }
 
     public function dashboard(){
-        // FIXED: Load all products with batches into memory to use the accessor math!
         $allProducts = Product::with('batches')->get();
         
-        // 1. Top Metric Cards
         $total_flowers_in_store = $allProducts->sum('stocks');
         $recent_orders_count = Order::where('created_at', '>=', now()->subDays(30))->count();
 
-        // 2. Sales Summary Chart (Top 7 for visual variety)
         $chartData = OrderDetail::with('product')
             ->selectRaw('product_id, SUM(quantity) as total_sales')
             ->groupBy('product_id')
@@ -58,7 +54,6 @@ class UserController extends Controller
             ->take(7)
             ->get();
 
-        // 3. Bottom Cards: Top 3 and Least 3
         $topSellingProducts = OrderDetail::with('product')
             ->selectRaw('product_id, SUM(quantity) as total_sales')
             ->groupBy('product_id')
@@ -69,17 +64,14 @@ class UserController extends Controller
         $leastSellingProducts = OrderDetail::with('product')
             ->selectRaw('product_id, SUM(quantity) as total_sales')
             ->groupBy('product_id')
-            ->orderBy('total_sales', 'asc') // Sort ascending for least sellers
+            ->orderBy('total_sales', 'asc') 
             ->take(3)
             ->get();
 
-        // 4. Stock Numbers Summary
-        // FIXED: Filter the collection using the accessor, NOT the database query!
         $low_stock_count = $allProducts->where('stocks', '<=', 10)->count(); 
         $total_categories = Product::count(); 
         $recently_added = Product::where('created_at', '>=', now()->subDays(7))->count();
         
-        // Using the newly created ReturnRequest model for the bridge we just built!
         $returned_flowers = \App\Models\ReturnRequest::count();
 
         return inertia('Admin/Dashboard',[
@@ -96,8 +88,6 @@ class UserController extends Controller
     }
 
     public function report(){
-        // 1. CRITICAL STOCK ALERTS
-        // FIXED: Load batches and filter in memory so the getStocksAttribute is used!
         $allProducts = Product::with('batches')->get();
         $lowStockProducts = $allProducts->where('stocks', '<=', 15)->sortBy('stocks')->values();
 
@@ -105,7 +95,6 @@ class UserController extends Controller
             $type = 'attention';
             $label = 'Attention !';
 
-            // Map database stock levels to your exact UI categories
             if ($product->stocks == 0) {
                 $type = 'out_of_stock';
                 $label = 'Out of Stock';
@@ -127,26 +116,21 @@ class UserController extends Controller
             ];
         });
 
-        // 2. SALES & CUSTOMERS OVERVIEW
         $totalSales = Order::sum('total');
         $totalOrders = Order::count();
         $avgSales = $totalOrders > 0 ? $totalSales / $totalOrders : 0;
 
-        // Calculate Trends (Last 30 Days vs Previous 30 Days)
         $current30Start = now()->subDays(30);
         $prev30Start = now()->subDays(60);
 
-        // Sales Trend
         $currentSales = Order::where('created_at', '>=', $current30Start)->sum('total');
         $prevSales = Order::whereBetween('created_at', [$prev30Start, $current30Start])->sum('total');
         $salesTrend = $prevSales > 0 ? round((($currentSales - $prevSales) / $prevSales) * 100) : 0;
 
-        // Orders Trend
         $currentOrdersCount = Order::where('created_at', '>=', $current30Start)->count();
         $prevOrdersCount = Order::whereBetween('created_at', [$prev30Start, $current30Start])->count();
         $ordersTrend = $prevOrdersCount > 0 ? round((($currentOrdersCount - $prevOrdersCount) / $prevOrdersCount) * 100) : 0;
 
-        // Average Sales Trend
         $currentAvg = $currentOrdersCount > 0 ? $currentSales / $currentOrdersCount : 0;
         $prevAvg = $prevOrdersCount > 0 ? $prevSales / $prevOrdersCount : 0;
         $avgTrend = $prevAvg > 0 ? round((($currentAvg - $prevAvg) / $prevAvg) * 100) : 0;
@@ -323,58 +307,35 @@ class UserController extends Controller
         }
     }
 
-    public function sales($order_id = null){
+    // ===============================================
+    // REFACTORED: SALES/ORDER HISTORY LOGIC
+    // ===============================================
+
+    public function sales(){
         $employees = User::whereIn('role', ['Manager', 'Cashier', 'Delivery', 'Employee'])->get();
+        
+        // Eager load details with products, and the user who handled it
+        $orders = Order::with(['details.product', 'user'])->latest()->paginate(12);
 
-        if($order_id == null){
-            $order_id_list = OrderDetail::select('order_id')->distinct()->latest()->get();
-            $orders = Order::latest()->paginate(12);
-
-            return inertia('Admin/Sales',[
-                'employees' => $employees,
-                'order_id' => $order_id_list,
-                'orders' => $orders,
-                'currentSelected_ID' => 'All',
-                'parent_order' => null
-            ]);
-        }else{
-            $order_details = OrderDetail::with('product')->where('order_id',$order_id)->latest()->paginate(5);
-            $parent_order = Order::find($order_id); 
-            
-            return inertia('Admin/Sales',[
-                'employees' => $employees,
-                'order_id' => null,
-                'orders' => $order_details,
-                'currentSelected_ID' => 'All',
-                'parent_order' => $parent_order 
-            ]);
-        } 
+        return inertia('Admin/Sales',[
+            'employees' => $employees,
+            'orders' => $orders,
+            'currentSelected_ID' => 'All'
+        ]);
     }
 
     public function selectedEmployee($user_id){
         $employees = User::whereIn('role', ['Manager', 'Cashier', 'Delivery', 'Employee'])->get();
-        if($user_id != 'All'){
-            $order_id_list = OrderDetail::select('order_id')->where('user_id',$user_id)->distinct()->latest()->get();
-            $orders = Order::where('user_id',$user_id)->latest()->paginate(12);
 
+        if($user_id != 'All'){
+            $orders = Order::with(['details.product', 'user'])->where('user_id', $user_id)->latest()->paginate(12);
             return inertia('Admin/Sales',[
                 'employees' => $employees,
-                'order_id' => $order_id_list,
                 'orders' => $orders,
-                'currentSelected_ID' => $user_id,
-                'parent_order' => null
+                'currentSelected_ID' => $user_id
             ]);
         }else{
-            $order_id_list = OrderDetail::select('order_id')->distinct()->latest()->get();
-            $orders = Order::latest()->paginate(12);
-
-            return inertia('Admin/Sales',[
-                'employees' => $employees,
-                'order_id' => $order_id_list,
-                'orders' => $orders,
-                'currentSelected_ID' => 'All',
-                'parent_order' => null
-            ]);
+            return redirect()->route('admin.sales');
         }
     }
 
@@ -383,14 +344,12 @@ class UserController extends Controller
         $cleanId = preg_replace('/\D+/', '', $rawId);
         
         $employees = User::whereIn('role', ['Manager', 'Cashier', 'Delivery', 'Employee'])->get();
-        $orders = Order::where('id', $cleanId)->latest()->paginate(12);
+        $orders = Order::with(['details.product', 'user'])->where('id', $cleanId)->latest()->paginate(12);
 
         return inertia('Admin/Sales',[
             'employees' => $employees,
-            'order_id' => [],
             'orders' => $orders,
-            'currentSelected_ID' => 'All',
-            'parent_order' => null
+            'currentSelected_ID' => 'All'
         ]);
     }
 
