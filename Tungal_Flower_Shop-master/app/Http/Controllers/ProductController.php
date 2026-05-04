@@ -90,14 +90,24 @@ class ProductController extends Controller
 
             $product->update($updateData);
 
-            $product->types()->delete();
+            // STRUCTURAL FIX: Replaced destructive delete() with intelligent sync
             if (!empty($fields['types'])) {
+                // Get the names of the types coming from the request
+                $incomingTypeNames = collect($fields['types'])->pluck('name')->toArray();
+
+                // 1. Delete types that are no longer present in the incoming request
+                $product->types()->whereNotIn('name', $incomingTypeNames)->delete();
+
+                // 2. Update existing types or create new ones
                 foreach ($fields['types'] as $type) {
-                    $product->types()->create([
-                        'name' => $type['name'],
-                        'multiplier' => $type['multiplier']
-                    ]);
+                    $product->types()->updateOrCreate(
+                        ['name' => $type['name']], // Match by name to prevent duplicates
+                        ['multiplier' => $type['multiplier']] // Update the multiplier if changed
+                    );
                 }
+            } else {
+                // If the user removed all types in the form, clear them safely
+                $product->types()->delete();
             }
 
             return redirect()->back()->with('success', $fields['product_name'] . ' updated successfully.');
