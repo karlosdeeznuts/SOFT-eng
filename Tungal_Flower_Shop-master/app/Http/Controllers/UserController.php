@@ -43,8 +43,11 @@ class UserController extends Controller
     }
 
     public function dashboard(){
+        // FIXED: Load all products with batches into memory to use the accessor math!
+        $allProducts = Product::with('batches')->get();
+        
         // 1. Top Metric Cards
-        $total_flowers_in_store = Product::sum('stocks');
+        $total_flowers_in_store = $allProducts->sum('stocks');
         $recent_orders_count = Order::where('created_at', '>=', now()->subDays(30))->count();
 
         // 2. Sales Summary Chart (Top 7 for visual variety)
@@ -71,7 +74,8 @@ class UserController extends Controller
             ->get();
 
         // 4. Stock Numbers Summary
-        $low_stock_count = Product::where('stocks', '<=', 10)->count(); // Anything 10 or below is 'Low'
+        // FIXED: Filter the collection using the accessor, NOT the database query!
+        $low_stock_count = $allProducts->where('stocks', '<=', 10)->count(); 
         $total_categories = Product::count(); 
         $recently_added = Product::where('created_at', '>=', now()->subDays(7))->count();
         
@@ -93,8 +97,9 @@ class UserController extends Controller
 
     public function report(){
         // 1. CRITICAL STOCK ALERTS
-        // Fetch products with 15 or less stock, ordered lowest first
-        $lowStockProducts = Product::where('stocks', '<=', 15)->orderBy('stocks', 'asc')->get();
+        // FIXED: Load batches and filter in memory so the getStocksAttribute is used!
+        $allProducts = Product::with('batches')->get();
+        $lowStockProducts = $allProducts->where('stocks', '<=', 15)->sortBy('stocks')->values();
 
         $stockAlerts = $lowStockProducts->map(function($product) {
             $type = 'attention';
