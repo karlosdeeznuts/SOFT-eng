@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\OrderDetail;
 use App\Models\Attendance;
+use App\Models\Payroll;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -398,5 +399,47 @@ class UserController extends Controller
         ]);
 
         return redirect()->route('customer.profile')->with('success', 'Password updated successfully.');
+    }
+
+    // ===============================================
+    // NEW: PAYROLL LOGIC
+    // ===============================================
+
+    public function payroll(){
+        $employees = User::whereIn('role', ['Manager', 'Cashier', 'Delivery', 'Employee'])->get();
+        
+        $payrolls = Payroll::with('employee')->latest()->paginate(10);
+
+        return inertia('Admin/Payroll', [
+            'employees' => $employees,
+            'payrolls' => $payrolls
+        ]);
+    }
+
+    public function storePayroll(Request $request){
+        $fields = $request->validate([
+            'employee_id' => 'required|exists:users,id',
+            'payroll_date' => 'required|date',
+            'salary_method' => 'required|string',
+            'rate' => 'required|numeric|min:0',
+            'days_worked' => 'required|numeric|min:0',
+            'regular_ot' => 'required|numeric|min:0',
+            'total_ot_pay' => 'required|numeric|min:0',
+            'ecola' => 'required|numeric|min:0',
+            'allowance' => 'required|numeric|min:0',
+            'other_pay' => 'required|numeric|min:0',
+            'gross_pay' => 'required|numeric|min:0',
+        ]);
+
+        // Explicitly set the status to 'Pending' exactly as required for the Owner's Approvals
+        $fields['status'] = 'Pending';
+
+        $payroll = Payroll::create($fields);
+
+        if($payroll){
+            return redirect()->back()->with('success', 'Payroll record successfully generated.');
+        } else {
+            return redirect()->back()->with('error', 'Failed to generate payroll record.');
+        }
     }
 }

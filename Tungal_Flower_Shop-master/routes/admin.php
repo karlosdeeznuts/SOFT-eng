@@ -7,6 +7,10 @@ use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route; 
 
 Route::middleware(['auth',AdminMiddleware::class])->group(function () {
+
+    Route::get('/admin/payroll', [App\Http\Controllers\UserController::class, 'payroll'])->name('admin.payroll');
+Route::post('/admin/payroll/store', [App\Http\Controllers\UserController::class, 'storePayroll'])->name('admin.storePayroll');
+
     // Admin Routes
     Route::get('/admin/dashboard', [UserController::class,'dashboard'])
     ->name('admin.dashboard');
