@@ -21,17 +21,22 @@ class ApprovalController extends Controller
             ->latest()
             ->get();
 
-        // FIXED: Eager load 'cashier' to display who processed it
         $pendingReturns = ReturnRequest::with(['order.details.product', 'cashier'])
             ->where('status', 'Under Inspection')
             ->latest()
             ->get()
             ->map(function ($return) {
-                // Safely calculate refund amount
+                // Safely calculate refund amount based on order total
                 $return->refund_amount = $return->order ? $return->order->total : 0;
                 
-                // FIXED: Calculate total quantity of items returned from the order details
-                $return->total_quantity = $return->order ? $return->order->details->sum('quantity') : 0;
+                // Accurately calculate total returned pieces using the multiplier
+                $totalPieces = 0;
+                if ($return->order && $return->order->details) {
+                    foreach ($return->order->details as $detail) {
+                        $totalPieces += ($detail->quantity * ($detail->multiplier ?? 1));
+                    }
+                }
+                $return->total_quantity = $totalPieces;
 
                 return $return;
             });
@@ -67,7 +72,6 @@ class ApprovalController extends Controller
      */
     public function handleReturn(Request $request, $id, $action)
     {
-        // Load the return request and the associated order details
         $returnRequest = ReturnRequest::with('order.details')->findOrFail($id);
 
         if ($action === 'approve') {
@@ -76,24 +80,18 @@ class ApprovalController extends Controller
                 // 1. Update the return request status
                 $returnRequest->update(['status' => 'Approved']);
                 
-                // 2. Update the original Order status so the Sales/Order History reflects the change
+                // 2. Update the original Order's specific 'order_status' column
                 if ($returnRequest->order) {
-                    $returnRequest->order->update(['status' => 'Refunded']);
+                    $returnRequest->order->update(['order_status' => 'Refunded']);
                 }
                 
-                // 3. Auto-Restock the inventory
-                if ($returnRequest->order && $returnRequest->order->details) {
-                    foreach ($returnRequest->order->details as $detail) {
-                        $product = Product::find($detail->product_id);
-                        if ($product) {
-                            $product->stocks += $detail->quantity;
-                            $product->save();
-                        }
-                    }
-                }
+                // FIXED: REMOVED THE AUTO-RESTOCKING LOOP
+                // We rely on the Admin to manually check the physical flowers and restock them manually if usable.
 
                 DB::commit();
-                return redirect()->back()->with('success', 'Return approved, order updated, and inventory restocked.');
+                
+                // Added a specific success message to remind them
+                return redirect()->back()->with('success', 'Return approved and order updated. Remember to manually adjust inventory stocks if the items are reusable.');
             } catch (\Exception $e) {
                 DB::rollBack();
                 return redirect()->back()->with('error', 'Failed to approve return: ' . $e->getMessage());
@@ -106,9 +104,9 @@ class ApprovalController extends Controller
                 // 1. Update the return request status
                 $returnRequest->update(['status' => 'Rejected']);
                 
-                // 2. Revert the original Order status back to Paid/Completed since the refund was denied
+                // 2. Revert the original Order 'order_status' back to Completed/Paid
                 if ($returnRequest->order) {
-                    $returnRequest->order->update(['status' => 'Paid']);
+                    $returnRequest->order->update(['order_status' => 'Completed']);
                 }
 
                 DB::commit();

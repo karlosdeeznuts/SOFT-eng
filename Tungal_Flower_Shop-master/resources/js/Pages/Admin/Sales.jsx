@@ -109,6 +109,17 @@ function Sales({ employees, orders, currentSelected_ID }) {
                                         : 'N/A';
 
                                     const handledBy = order.user ? `${order.user.firstname} ${order.user.lastname}` : 'System';
+                                    
+                                    // FIXED: Sync Status Colors across the platform
+                                    const displayStatus = order.order_status || order.status;
+                                    let badgeClass = 'bg-success-subtle text-success'; // default green
+                                    if (['Refund Requested', 'Under Inspection'].includes(displayStatus)) {
+                                        badgeClass = 'bg-warning text-dark';
+                                    } else if (['Refunded', 'Refund Approved', 'Approved'].includes(displayStatus)) {
+                                        badgeClass = 'bg-danger text-white';
+                                    } else if (displayStatus === 'Received') {
+                                        badgeClass = 'bg-primary-subtle text-primary';
+                                    }
 
                                     return (
                                         <tr key={order.id} onClick={() => openOrderModal(order)} style={{ transition: 'background-color 0.2s ease' }} className="table-row-hover">
@@ -122,12 +133,8 @@ function Sales({ employees, orders, currentSelected_ID }) {
                                             <td className="py-3 text-primary fw-bold" style={{ fontSize: '14px' }}>₱{order.total}</td>
                                             <td className="py-3 text-dark" style={{ fontSize: '12px' }}>{formattedDate}</td>
                                             <td className="py-3">
-                                                <span className={`badge px-3 py-2 rounded-pill ${
-                                                    order.order_status === 'Delivered' ? 'bg-success-subtle text-success' :
-                                                    order.order_status === 'Received' ? 'bg-primary-subtle text-primary' :
-                                                    'bg-warning-subtle text-warning'
-                                                }`} style={{ fontSize: '11px' }}>
-                                                    {order.order_status}
+                                                <span className={`badge px-3 py-2 rounded-pill ${badgeClass}`} style={{ fontSize: '11px' }}>
+                                                    {displayStatus === 'Approved' ? 'Refunded' : displayStatus}
                                                 </span>
                                             </td>
                                         </tr>

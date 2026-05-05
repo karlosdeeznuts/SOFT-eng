@@ -38,6 +38,14 @@ const ReviewPayrollModal = ({ isOpen, onClose, record }) => {
     if (!isOpen || !record) return null;
 
     const handleAction = (action) => {
+        if (action === 'approve') {
+            const confirmed = window.confirm("Are you sure you want to approve this payroll?");
+            if (!confirmed) return;
+        } else if (action === 'reject') {
+            const confirmed = window.confirm("Are you sure you want to reject this payroll?");
+            if (!confirmed) return;
+        }
+
         router.put(route('admin.approvals.payroll', { id: record.id, action }), {}, {
             preserveScroll: true,
             onSuccess: () => onClose()
@@ -92,6 +100,15 @@ const ReviewReturnModal = ({ isOpen, onClose, record }) => {
     if (!isOpen || !record) return null;
 
     const handleAction = (action) => {
+        // FIXED: ADDED EXPLICIT WARNING ABOUT MANUAL RESTOCKING
+        if (action === 'approve') {
+            const confirmed = window.confirm("Are you sure you want to approve this return?\n\nIMPORTANT: Inventory will NOT be automatically restocked. You must manually add these items back to inventory if they are still usable.");
+            if (!confirmed) return;
+        } else if (action === 'reject') {
+            const confirmed = window.confirm("Are you sure you want to reject this return?");
+            if (!confirmed) return;
+        }
+
         router.put(route('admin.approvals.return', { id: record.id, action }), {}, {
             preserveScroll: true,
             onSuccess: () => onClose()
@@ -113,14 +130,12 @@ const ReviewReturnModal = ({ isOpen, onClose, record }) => {
                             <span className="fw-medium text-muted">Order ID:</span>
                             <span className="fw-bold text-dark">#{String(record.order_id).padStart(4, '0')}</span>
                         </div>
-                        {/* FIXED: Included Cashier Information */}
                         <div className="d-flex justify-content-between border-bottom pb-2">
                             <span className="fw-medium text-muted">Cashier:</span>
                             <span className="fw-bold text-dark">
                                 {record.cashier ? `${record.cashier.firstname} ${record.cashier.lastname}` : 'Unknown'}
                             </span>
                         </div>
-                        {/* FIXED: Exact Date and Time formatting */}
                         <div className="d-flex justify-content-between border-bottom pb-2">
                             <span className="fw-medium text-muted">Date & Time:</span>
                             <span className="fw-bold text-dark">
@@ -135,7 +150,6 @@ const ReviewReturnModal = ({ isOpen, onClose, record }) => {
                             <span className="fw-medium text-muted">Method:</span>
                             <span className="fw-bold text-dark">{record.refund_method || 'N/A'}</span>
                         </div>
-                        {/* FIXED: Now outputs the correctly mapped quantity */}
                         <div className="d-flex justify-content-between border-bottom pb-2">
                             <span className="fw-medium text-muted">Quantity Returned:</span>
                             <span className="fw-bold text-dark">{record.total_quantity || 0} items</span>
