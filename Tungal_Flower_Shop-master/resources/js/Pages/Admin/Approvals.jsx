@@ -1,32 +1,34 @@
-import React, { useState } from 'react';
-import { Head, router } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../Layout/AdminLayout';
+import { Head, router, usePage } from '@inertiajs/react';
+import { Toaster, toast } from 'sonner';
 
-// --- CUSTOM ICONS ---
-const ReviewIcon = () => (
+// --- ICONS ---
+const SearchIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-        <circle cx="12" cy="12" r="3"></circle>
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
     </svg>
 );
 
-const ApproveIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+const ActionIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <path d="M9 15l2 2 4-4"></path>
+    </svg>
+);
+
+const CheckIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="20 6 9 17 4 12"></polyline>
     </svg>
 );
 
-const RejectIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+const XIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="6" x2="6" y2="18"></line>
         <line x1="6" y1="6" x2="18" y2="18"></line>
-    </svg>
-);
-
-const SearchIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6c757d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="8"></circle>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
     </svg>
 );
 
@@ -35,65 +37,51 @@ const SearchIcon = () => (
 const ReviewPayrollModal = ({ isOpen, onClose, record }) => {
     if (!isOpen || !record) return null;
 
-    const handleDecision = (decision) => {
-        // We will wire this up to the backend in the next step
-        console.log(`Payroll ${record.id} marked as: ${decision}`);
-        
-        // Placeholder routing for when backend is ready
-        /*
-        router.put(route(`admin.approvals.payroll`, { id: record.id, action: decision }), {}, {
+    const handleAction = (action) => {
+        router.put(route('admin.approvals.payroll', { id: record.id, action }), {}, {
             preserveScroll: true,
             onSuccess: () => onClose()
         });
-        */
-        onClose();
     };
 
     return (
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050 }}>
-            <div className="card shadow-lg border-0 overflow-hidden" style={{ borderRadius: '24px', width: '100%', maxWidth: '500px', backgroundColor: '#FFF' }}>
-                <div className="card-body p-5">
+            <div className="card shadow-lg border-0" style={{ borderRadius: '24px', width: '100%', maxWidth: '500px', backgroundColor: '#FFF' }}>
+                <div className="card-body p-4 p-md-5">
                     <h3 className="fw-bolder text-center mb-4" style={{ color: '#1E1E1E' }}>Review Payroll</h3>
                     
-                    <div className="d-flex justify-content-between mb-3 border-bottom pb-3">
-                        <span className="text-muted fw-medium">Employee</span>
-                        <span className="fw-bold text-dark">{record.employee_name}</span>
-                    </div>
-                    <div className="d-flex justify-content-between mb-3 border-bottom pb-3">
-                        <span className="text-muted fw-medium">Payroll Date</span>
-                        <span className="fw-bold text-dark">{record.date}</span>
-                    </div>
-                    <div className="d-flex justify-content-between mb-3 border-bottom pb-3">
-                        <span className="text-muted fw-medium">Method</span>
-                        <span className="fw-bold text-dark">{record.method}</span>
-                    </div>
-                    
-                    <div className="bg-light p-3 rounded-3 mb-4 mt-4">
-                        <div className="d-flex justify-content-between mb-2">
-                            <span className="text-muted">Gross Pay</span>
-                            <span className="fw-bold text-dark">₱ {record.gross_pay}</span>
+                    <div className="d-flex flex-column gap-3 mb-4">
+                        <div className="d-flex justify-content-between border-bottom pb-2">
+                            <span className="fw-medium text-muted">Employee:</span>
+                            <span className="fw-bold text-dark">{record.employee?.firstname} {record.employee?.lastname}</span>
                         </div>
-                        <div className="d-flex justify-content-between mb-2 border-bottom pb-2">
-                            <span className="text-muted">Total Deductions</span>
-                            <span className="fw-bold text-danger">- ₱ {record.deductions}</span>
+                        <div className="d-flex justify-content-between border-bottom pb-2">
+                            <span className="fw-medium text-muted">Days Worked:</span>
+                            <span className="fw-bold text-dark">{record.days_worked} days</span>
                         </div>
-                        <div className="d-flex justify-content-between mt-2 align-items-center">
-                            <span className="fw-bolder" style={{ fontSize: '18px', color: '#1E1E1E' }}>Net Pay</span>
-                            <span className="fw-bolder text-success" style={{ fontSize: '20px' }}>₱ {record.net_pay}</span>
+                        <div className="d-flex justify-content-between border-bottom pb-2">
+                            <span className="fw-medium text-muted">Rate:</span>
+                            <span className="fw-bold text-dark">₱{record.rate}</span>
+                        </div>
+                        <div className="d-flex justify-content-between border-bottom pb-2">
+                            <span className="fw-medium text-muted">Overtime Pay:</span>
+                            <span className="fw-bold text-dark">₱{record.total_ot_pay}</span>
+                        </div>
+                        <div className="d-flex justify-content-between border-bottom pb-2">
+                            <span className="fw-medium text-muted">Gross Pay:</span>
+                            <span className="fw-bold text-dark" style={{ color: '#7859FF' }}>₱{record.gross_pay}</span>
                         </div>
                     </div>
 
-                    <div className="d-flex justify-content-between gap-3 mt-5">
-                        <button onClick={() => handleDecision('Rejected')} className="btn w-50 d-flex justify-content-center align-items-center gap-2 fw-bold text-white shadow-none" style={{ backgroundColor: '#DC3545', borderRadius: '12px', height: '48px' }}>
-                            <RejectIcon /> Reject
+                    <div className="d-flex justify-content-between gap-3 mt-4">
+                        <button onClick={() => handleAction('reject')} className="btn w-50 fw-bold text-white d-flex align-items-center justify-content-center gap-2" style={{ backgroundColor: '#DC3545', borderRadius: '8px', height: '45px' }}>
+                            <XIcon /> Reject
                         </button>
-                        <button onClick={() => handleDecision('Approved')} className="btn w-50 d-flex justify-content-center align-items-center gap-2 fw-bold text-white shadow-sm border-0" style={{ backgroundColor: '#7859FF', borderRadius: '12px', height: '48px' }}>
-                            <ApproveIcon /> Approve
+                        <button onClick={() => handleAction('approve')} className="btn w-50 fw-bold text-white d-flex align-items-center justify-content-center gap-2" style={{ backgroundColor: '#198754', borderRadius: '8px', height: '45px' }}>
+                            <CheckIcon /> Approve
                         </button>
                     </div>
-                    <div className="text-center mt-3">
-                        <button onClick={onClose} className="btn btn-link text-muted text-decoration-none shadow-none p-0">Cancel</button>
-                    </div>
+                    <button onClick={onClose} className="btn btn-link text-muted w-100 mt-2 text-decoration-none shadow-none">Cancel</button>
                 </div>
             </div>
         </div>
@@ -103,69 +91,57 @@ const ReviewPayrollModal = ({ isOpen, onClose, record }) => {
 const ReviewReturnModal = ({ isOpen, onClose, record }) => {
     if (!isOpen || !record) return null;
 
-    const handleDecision = (decision) => {
-        // We will wire this up to the backend in the next step
-        console.log(`Return ${record.id} marked as: ${decision}`);
-        
-        // Placeholder routing for when backend is ready
-        /*
-        router.put(route(`admin.approvals.return`, { id: record.id, action: decision }), {}, {
+    const handleAction = (action) => {
+        router.put(route('admin.approvals.return', { id: record.id, action }), {}, {
             preserveScroll: true,
             onSuccess: () => onClose()
         });
-        */
-        onClose();
     };
 
     return (
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050 }}>
-            <div className="card shadow-lg border-0 overflow-hidden" style={{ borderRadius: '24px', width: '100%', maxWidth: '500px', backgroundColor: '#FFF' }}>
-                <div className="card-body p-5">
-                    <h3 className="fw-bolder text-center mb-4" style={{ color: '#1E1E1E' }}>Review Return</h3>
+            <div className="card shadow-lg border-0" style={{ borderRadius: '24px', width: '100%', maxWidth: '500px', backgroundColor: '#FFF' }}>
+                <div className="card-body p-4 p-md-5">
+                    <h3 className="fw-bolder text-center mb-4" style={{ color: '#1E1E1E' }}>Review Return Request</h3>
                     
-                    <div className="d-flex justify-content-between mb-3 border-bottom pb-3">
-                        <span className="text-muted fw-medium">Order ID</span>
-                        <span className="fw-bold text-dark">#{record.order_id}</span>
-                    </div>
-                    <div className="d-flex justify-content-between mb-3 border-bottom pb-3">
-                        <span className="text-muted fw-medium">Processed By</span>
-                        <span className="fw-bold text-dark">{record.cashier_name}</span>
-                    </div>
-                    <div className="d-flex justify-content-between mb-3 border-bottom pb-3">
-                        <span className="text-muted fw-medium">Returned Item</span>
-                        <span className="fw-bold text-dark">{record.item_name} (x{record.quantity})</span>
-                    </div>
-                    
-                    <div className="bg-light p-3 rounded-3 mb-4 mt-4">
-                        <div className="mb-2">
-                            <span className="text-muted d-block mb-1">Reason for Return</span>
-                            <span className="fw-bold text-dark d-block p-2 border rounded bg-white">{record.reason}</span>
+                    <div className="d-flex flex-column gap-3 mb-4">
+                        <div className="d-flex justify-content-between border-bottom pb-2">
+                            <span className="fw-medium text-muted">Request ID:</span>
+                            <span className="fw-bold text-dark">#{String(record.id).padStart(4, '0')}</span>
                         </div>
-                        <div className="d-flex justify-content-between mt-3 align-items-center border-top pt-3">
-                            <span className="fw-bolder" style={{ fontSize: '18px', color: '#1E1E1E' }}>Refund Amount</span>
-                            <span className="fw-bolder text-danger" style={{ fontSize: '20px' }}>₱ {record.refund_amount}</span>
+                        <div className="d-flex justify-content-between border-bottom pb-2">
+                            <span className="fw-medium text-muted">Reason:</span>
+                            <span className="fw-bold text-dark">{record.reason || 'Not Specified'}</span>
+                        </div>
+                        <div className="d-flex justify-content-between border-bottom pb-2">
+                            <span className="fw-medium text-muted">Quantity Returned:</span>
+                            <span className="fw-bold text-dark">{record.quantity || 0}</span>
+                        </div>
+                        <div className="d-flex justify-content-between border-bottom pb-2">
+                            <span className="fw-medium text-muted">Amount to Refund:</span>
+                            <span className="fw-bold text-danger">₱{record.refund_amount || record.amount || 0}</span>
                         </div>
                     </div>
 
-                    <div className="d-flex justify-content-between gap-3 mt-5">
-                        <button onClick={() => handleDecision('Rejected')} className="btn w-50 d-flex justify-content-center align-items-center gap-2 fw-bold text-white shadow-none" style={{ backgroundColor: '#DC3545', borderRadius: '12px', height: '48px' }}>
-                            <RejectIcon /> Reject
+                    <div className="d-flex justify-content-between gap-3 mt-4">
+                        <button onClick={() => handleAction('reject')} className="btn w-50 fw-bold text-white d-flex align-items-center justify-content-center gap-2" style={{ backgroundColor: '#DC3545', borderRadius: '8px', height: '45px' }}>
+                            <XIcon /> Reject
                         </button>
-                        <button onClick={() => handleDecision('Approved')} className="btn w-50 d-flex justify-content-center align-items-center gap-2 fw-bold text-white shadow-sm border-0" style={{ backgroundColor: '#198754', borderRadius: '12px', height: '48px' }}>
-                            <ApproveIcon /> Approve
+                        <button onClick={() => handleAction('approve')} className="btn w-50 fw-bold text-white d-flex align-items-center justify-content-center gap-2" style={{ backgroundColor: '#198754', borderRadius: '8px', height: '45px' }}>
+                            <CheckIcon /> Approve
                         </button>
                     </div>
-                    <div className="text-center mt-3">
-                        <button onClick={onClose} className="btn btn-link text-muted text-decoration-none shadow-none p-0">Cancel</button>
-                    </div>
+                    <button onClick={onClose} className="btn btn-link text-muted w-100 mt-2 text-decoration-none shadow-none">Cancel</button>
                 </div>
             </div>
         </div>
     );
 };
 
+
 // --- MAIN COMPONENT ---
-export default function Approvals({ pendingPayrolls: initialPayrolls, pendingReturns: initialReturns }) {
+
+export default function Approvals({ pendingPayrolls = [], pendingReturns = [] }) {
     const [activeTab, setActiveTab] = useState('payroll');
     const [searchQuery, setSearchQuery] = useState('');
     
@@ -174,83 +150,79 @@ export default function Approvals({ pendingPayrolls: initialPayrolls, pendingRet
     const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState(null);
 
-    // Dummy Data (Acts as fallback until backend sends real props)
-    const dummyPayrolls = [
-        { id: 1, employee_name: '3 - Cashier Main', date: '2025-05-15', method: 'Cash', gross_pay: '5200.00', deductions: '1100.00', net_pay: '4100.00', status: 'Pending' },
-        { id: 2, employee_name: '2 - Manager Main', date: '2025-05-15', method: 'Bank', gross_pay: '8000.00', deductions: '1500.00', net_pay: '6500.00', status: 'Pending' },
-    ];
+    const { flash } = usePage().props;
 
-    const dummyReturns = [
-        { id: 101, order_id: 'ORD-5092', cashier_name: 'Cashier Main', item_name: 'Red Roses Bouquet', quantity: 1, reason: 'Flowers were wilted upon delivery.', refund_amount: '1200.00', status: 'Pending' },
-        { id: 102, order_id: 'ORD-5104', cashier_name: 'Admin Main', item_name: 'Tulip Single Stem', quantity: 3, reason: 'Customer changed mind immediately after purchase.', refund_amount: '450.00', status: 'Pending' },
-    ];
+    // Toast Notifications listener
+    useEffect(() => {
+        if (flash?.success) toast.success(flash.success);
+        if (flash?.error) toast.error(flash.error);
+    }, [flash]);
 
-    const payrolls = initialPayrolls || dummyPayrolls;
-    const returns = initialReturns || dummyReturns;
+    // Safe fallbacks in case backend passes null
+    const safePayrolls = pendingPayrolls || [];
+    const safeReturns = pendingReturns || [];
 
     // Filter Logic
-    const filteredPayrolls = payrolls.filter(p => 
-        p.employee_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        String(p.id).includes(searchQuery)
-    );
+    const filteredPayrolls = safePayrolls.filter(p => {
+        const term = searchQuery.toLowerCase();
+        const empName = `${p.employee?.firstname} ${p.employee?.lastname}`.toLowerCase();
+        return empName.includes(term) || String(p.id).includes(term);
+    });
 
-    const filteredReturns = returns.filter(r => 
-        r.order_id.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        r.cashier_name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const openReview = (record, type) => {
-        setSelectedRecord(record);
-        if (type === 'payroll') setIsPayrollModalOpen(true);
-        if (type === 'return') setIsReturnModalOpen(true);
-    };
+    const filteredReturns = safeReturns.filter(r => {
+        const term = searchQuery.toLowerCase();
+        return String(r.id).includes(term) || (r.reason && r.reason.toLowerCase().includes(term));
+    });
 
     return (
         <div className="container-fluid py-5 px-5" style={{ minHeight: '100vh', backgroundColor: '#F4F5FA', fontFamily: "'Poppins', sans-serif" }}>
             <Head title="Approvals Hub" />
+            <Toaster position="top-right" expand={true} richColors />
 
-            {/* Header & Search */}
+            {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-5">
-                <h1 className="fw-bolder m-0" style={{ color: '#1E1E1E', fontSize: '36px', letterSpacing: '-0.5px' }}>Approvals</h1>
-                
-                <div className="d-flex align-items-center rounded-pill px-3 bg-white shadow-sm border border-light" style={{ width: '300px', height: '48px' }}>
-                    <SearchIcon />
-                    <input 
-                        type="text" 
-                        className="form-control shadow-none border-0 bg-transparent fw-medium" 
-                        placeholder="Search records..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{ color: '#5A637A', fontSize: '14px' }} 
-                    />
+                <h2 className="fw-bolder m-0" style={{ color: '#1E1E1E', fontSize: '32px' }}>Approvals</h2>
+
+                <div className="d-flex gap-4 align-items-center">
+                    <div className="d-flex justify-content-center align-items-center rounded-pill px-4" style={{ backgroundColor: '#EBEAEE', width: '300px', height: '48px' }}>
+                        <SearchIcon style={{ color: '#6c757d', marginRight: '8px' }} />
+                        <input
+                            type="text"
+                            className="form-control border-0 bg-transparent shadow-none text-start p-0 m-0"
+                            placeholder="Search pending..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{ fontSize: '14px', color: '#6c757d' }}
+                        />
+                    </div>
                 </div>
             </div>
 
-            {/* Main Content Area */}
-            <div className="card shadow-sm border-0 w-100" style={{ borderRadius: '16px', backgroundColor: '#FFF' }}>
+            {/* Main Card */}
+            <div className="card shadow-sm border-0 w-100 overflow-hidden" style={{ borderRadius: '16px', backgroundColor: '#FFF' }}>
                 <div className="card-body p-0">
                     
-                    {/* Tabs Navigation */}
+                    {/* Tabs */}
                     <div className="d-flex gap-2 p-4 border-bottom">
                         <button 
                             onClick={() => setActiveTab('payroll')}
-                            className="btn fw-semibold border-0 shadow-none px-4" 
+                            className="btn fw-semibold border-0 shadow-none px-4 position-relative" 
                             style={{ 
                                 backgroundColor: activeTab === 'payroll' ? '#7859FF' : '#EBEAEE', 
                                 color: activeTab === 'payroll' ? 'white' : '#5A637A', 
                                 borderRadius: '8px', fontSize: '14px', height: '42px'
                             }}
                         >
-                            Payroll Queue
-                            {payrolls.length > 0 && (
-                                <span className={`badge ms-2 rounded-pill ${activeTab === 'payroll' ? 'bg-white text-primary' : 'bg-secondary text-white'}`}>
-                                    {payrolls.length}
+                            Payroll
+                            {safePayrolls.length > 0 && (
+                                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '10px' }}>
+                                    {safePayrolls.length}
                                 </span>
                             )}
                         </button>
                         <button 
                             onClick={() => setActiveTab('returns')}
-                            className="btn fw-semibold border-0 shadow-none px-4" 
+                            className="btn fw-semibold border-0 shadow-none px-4 position-relative" 
                             style={{ 
                                 backgroundColor: activeTab === 'returns' ? '#7859FF' : '#EBEAEE', 
                                 color: activeTab === 'returns' ? 'white' : '#5A637A', 
@@ -258,96 +230,116 @@ export default function Approvals({ pendingPayrolls: initialPayrolls, pendingRet
                             }}
                         >
                             Returns & Refunds
-                            {returns.length > 0 && (
-                                <span className={`badge ms-2 rounded-pill ${activeTab === 'returns' ? 'bg-white text-primary' : 'bg-secondary text-white'}`}>
-                                    {returns.length}
+                            {safeReturns.length > 0 && (
+                                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '10px' }}>
+                                    {safeReturns.length}
                                 </span>
                             )}
                         </button>
                     </div>
 
-                    {/* Table View: PAYROLL */}
+                    {/* TABLE: PAYROLL */}
                     {activeTab === 'payroll' && (
-                        <div className="table-responsive p-2">
+                        <div className="table-responsive">
                             <table className="table table-borderless align-middle mb-0 text-center">
-                                <thead style={{ backgroundColor: '#EBEAEE', color: '#1E1E1E' }}>
+                                <thead style={{ backgroundColor: '#E3E4ED', color: '#1E1E1E' }}>
                                     <tr>
-                                        <th className="py-3 fw-bold" style={{ fontSize: '14px' }}>Payroll ID</th>
-                                        <th className="py-3 fw-bold" style={{ fontSize: '14px' }}>Employee</th>
-                                        <th className="py-3 fw-bold" style={{ fontSize: '14px' }}>Date</th>
-                                        <th className="py-3 fw-bold" style={{ fontSize: '14px' }}>Net Pay</th>
-                                        <th className="py-3 fw-bold" style={{ fontSize: '14px' }}>Status</th>
-                                        <th className="py-3 fw-bold" style={{ fontSize: '14px' }}>Action</th>
+                                        <th className="py-4 fw-bold" style={{ fontSize: '14px', width: '15%' }}>Payroll ID</th>
+                                        <th className="py-4 fw-bold" style={{ fontSize: '14px', width: '25%' }}>Employee</th>
+                                        <th className="py-4 fw-bold" style={{ fontSize: '14px', width: '20%' }}>Gross Pay</th>
+                                        <th className="py-4 fw-bold" style={{ fontSize: '14px', width: '20%' }}>Status</th>
+                                        <th className="py-4 fw-bold" style={{ fontSize: '14px', width: '20%' }}>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredPayrolls.length > 0 ? (
                                         filteredPayrolls.map((row, index) => (
-                                            <tr key={index} className="border-bottom">
-                                                <td className="py-4 fw-bolder text-dark" style={{ fontSize: '15px' }}>{row.id}</td>
-                                                <td className="py-4 text-dark" style={{ fontSize: '15px' }}>{row.employee_name}</td>
-                                                <td className="py-4 text-dark" style={{ fontSize: '15px' }}>{row.date}</td>
-                                                <td className="py-4 fw-bold text-success" style={{ fontSize: '15px' }}>₱ {row.net_pay}</td>
+                                            <tr key={row.id} style={{ borderBottom: index !== filteredPayrolls.length - 1 ? '1px solid #F0F0F5' : 'none' }}>
+                                                <td className="py-4 fw-bolder text-dark">#{String(row.id).padStart(4, '0')}</td>
+                                                <td className="py-4 text-dark fw-medium">
+                                                    {row.employee ? `${row.employee.firstname} ${row.employee.lastname}` : `User ID: ${row.employee_id}`}
+                                                </td>
+                                                <td className="py-4 text-dark fw-bold" style={{ color: '#7859FF' }}>₱{row.gross_pay}</td>
                                                 <td className="py-4">
-                                                    <span className="badge bg-warning text-dark px-3 py-2 rounded-pill">Pending</span>
+                                                    <span className="badge bg-warning text-dark px-3 py-2 rounded-pill" style={{ fontSize: '12px' }}>
+                                                        Pending
+                                                    </span>
                                                 </td>
                                                 <td className="py-4">
                                                     <button 
-                                                        onClick={() => openReview(row, 'payroll')}
-                                                        className="btn btn-sm d-inline-flex align-items-center gap-2 fw-semibold text-white shadow-sm border-0 px-3" 
-                                                        style={{ backgroundColor: '#7859FF', borderRadius: '8px', padding: '8px 16px' }}
+                                                        onClick={() => {
+                                                            setSelectedRecord(row);
+                                                            setIsPayrollModalOpen(true);
+                                                        }}
+                                                        className="btn btn-sm d-inline-flex align-items-center justify-content-center gap-2 fw-semibold text-white shadow-sm border-0" 
+                                                        style={{ backgroundColor: '#7859FF', borderRadius: '8px', padding: '8px 16px', fontSize: '13px' }}
                                                     >
-                                                        <ReviewIcon /> Review
+                                                        <ActionIcon /> Review
                                                     </button>
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
-                                        <tr><td colSpan="6" className="text-center py-5 text-muted">No pending payrolls.</td></tr>
+                                        <tr>
+                                            <td colSpan="5" className="text-center py-5">
+                                                <div className="text-muted fw-medium" style={{ fontSize: '15px' }}>No pending payrolls require approval.</div>
+                                            </td>
+                                        </tr>
                                     )}
                                 </tbody>
                             </table>
                         </div>
                     )}
 
-                    {/* Table View: RETURNS */}
+                    {/* TABLE: RETURNS */}
                     {activeTab === 'returns' && (
-                        <div className="table-responsive p-2">
+                        <div className="table-responsive">
                             <table className="table table-borderless align-middle mb-0 text-center">
-                                <thead style={{ backgroundColor: '#EBEAEE', color: '#1E1E1E' }}>
+                                <thead style={{ backgroundColor: '#E3E4ED', color: '#1E1E1E' }}>
                                     <tr>
-                                        <th className="py-3 fw-bold" style={{ fontSize: '14px' }}>Req ID</th>
-                                        <th className="py-3 fw-bold" style={{ fontSize: '14px' }}>Order ID</th>
-                                        <th className="py-3 fw-bold" style={{ fontSize: '14px' }}>Cashier</th>
-                                        <th className="py-3 fw-bold" style={{ fontSize: '14px' }}>Refund Amount</th>
-                                        <th className="py-3 fw-bold" style={{ fontSize: '14px' }}>Status</th>
-                                        <th className="py-3 fw-bold" style={{ fontSize: '14px' }}>Action</th>
+                                        <th className="py-4 fw-bold" style={{ fontSize: '14px', width: '15%' }}>Request ID</th>
+                                        <th className="py-4 fw-bold" style={{ fontSize: '14px', width: '25%' }}>Reason</th>
+                                        <th className="py-4 fw-bold" style={{ fontSize: '14px', width: '20%' }}>Date</th>
+                                        <th className="py-4 fw-bold" style={{ fontSize: '14px', width: '20%' }}>Status</th>
+                                        <th className="py-4 fw-bold" style={{ fontSize: '14px', width: '20%' }}>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredReturns.length > 0 ? (
                                         filteredReturns.map((row, index) => (
-                                            <tr key={index} className="border-bottom">
-                                                <td className="py-4 fw-bolder text-dark" style={{ fontSize: '15px' }}>{row.id}</td>
-                                                <td className="py-4 text-dark" style={{ fontSize: '15px' }}>{row.order_id}</td>
-                                                <td className="py-4 text-dark" style={{ fontSize: '15px' }}>{row.cashier_name}</td>
-                                                <td className="py-4 fw-bold text-danger" style={{ fontSize: '15px' }}>₱ {row.refund_amount}</td>
+                                            <tr key={row.id} style={{ borderBottom: index !== filteredReturns.length - 1 ? '1px solid #F0F0F5' : 'none' }}>
+                                                <td className="py-4 fw-bolder text-dark">#{String(row.id).padStart(4, '0')}</td>
+                                                <td className="py-4 text-dark fw-medium text-truncate" style={{ maxWidth: '150px' }}>
+                                                    {row.reason || 'N/A'}
+                                                </td>
+                                                <td className="py-4 text-muted">
+                                                    {new Date(row.created_at).toLocaleDateString()}
+                                                </td>
                                                 <td className="py-4">
-                                                    <span className="badge bg-warning text-dark px-3 py-2 rounded-pill">Pending</span>
+                                                    <span className="badge bg-warning text-dark px-3 py-2 rounded-pill" style={{ fontSize: '12px' }}>
+                                                        Pending
+                                                    </span>
                                                 </td>
                                                 <td className="py-4">
                                                     <button 
-                                                        onClick={() => openReview(row, 'return')}
-                                                        className="btn btn-sm d-inline-flex align-items-center gap-2 fw-semibold text-white shadow-sm border-0 px-3" 
-                                                        style={{ backgroundColor: '#7859FF', borderRadius: '8px', padding: '8px 16px' }}
+                                                        onClick={() => {
+                                                            setSelectedRecord(row);
+                                                            setIsReturnModalOpen(true);
+                                                        }}
+                                                        className="btn btn-sm d-inline-flex align-items-center justify-content-center gap-2 fw-semibold text-white shadow-sm border-0" 
+                                                        style={{ backgroundColor: '#7859FF', borderRadius: '8px', padding: '8px 16px', fontSize: '13px' }}
                                                     >
-                                                        <ReviewIcon /> Review
+                                                        <ActionIcon /> Review
                                                     </button>
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
-                                        <tr><td colSpan="6" className="text-center py-5 text-muted">No pending returns.</td></tr>
+                                        <tr>
+                                            <td colSpan="5" className="text-center py-5">
+                                                <div className="text-muted fw-medium" style={{ fontSize: '15px' }}>No pending returns require approval.</div>
+                                            </td>
+                                        </tr>
                                     )}
                                 </tbody>
                             </table>
@@ -357,18 +349,10 @@ export default function Approvals({ pendingPayrolls: initialPayrolls, pendingRet
                 </div>
             </div>
 
-            {/* Modals */}
-            <ReviewPayrollModal 
-                isOpen={isPayrollModalOpen} 
-                onClose={() => setIsPayrollModalOpen(false)} 
-                record={selectedRecord} 
-            />
-            <ReviewReturnModal 
-                isOpen={isReturnModalOpen} 
-                onClose={() => setIsReturnModalOpen(false)} 
-                record={selectedRecord} 
-            />
-            
+            {/* Modal Mounts */}
+            <ReviewPayrollModal isOpen={isPayrollModalOpen} onClose={() => setIsPayrollModalOpen(false)} record={selectedRecord} />
+            <ReviewReturnModal isOpen={isReturnModalOpen} onClose={() => setIsReturnModalOpen(false)} record={selectedRecord} />
+
         </div>
     );
 }

@@ -74,15 +74,15 @@ export default function AdminLayout({ children }) {
                             </Link>
                         )}
 
-                        {/* RE-ADDED: Payroll Tab */}
                         {role === 'Admin' && (
                             <Link href={route('admin.payroll')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.payroll') ? activeLinkStyle : inactiveLinkStyle}>
                                 <BsCreditCard className="fs-5" /> Payroll
                             </Link>
                         )}
                         
-                        {role === 'Owner' && (
-                            <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
+                        {/* CHANGED: Approvals is now accessible by Admin OR Owner, properly linked */}
+                        {(role === 'Owner' || role === 'Admin') && (
+                            <Link href={route('admin.approvals')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.approvals') ? activeLinkStyle : inactiveLinkStyle}>
                                 <BsPersonCheck className="fs-5" /> Approvals
                             </Link>
                         )}
@@ -156,15 +156,15 @@ export default function AdminLayout({ children }) {
                                 </Link>
                             )}
 
-                            {/* RE-ADDED: Payroll Tab (Mobile) */}
                             {role === 'Admin' && (
                                 <Link href={route('admin.payroll')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.payroll') ? activeLinkStyle : inactiveLinkStyle}>
                                     <BsCreditCard /> Payroll
                                 </Link>
                             )}
 
-                            {role === 'Owner' && (
-                                <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
+                            {/* CHANGED: Approvals is now accessible by Admin OR Owner, properly linked */}
+                            {(role === 'Owner' || role === 'Admin') && (
+                                <Link href={route('admin.approvals')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.approvals') ? activeLinkStyle : inactiveLinkStyle}>
                                     <BsPersonCheck className="fs-5" /> Approvals
                                 </Link>
                             )}

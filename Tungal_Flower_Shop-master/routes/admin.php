@@ -4,6 +4,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ApprovalController; // Ensure you have this when we build it
 use Illuminate\Support\Facades\Route; 
 
 Route::middleware(['auth',AdminMiddleware::class])->group(function () {
@@ -20,6 +21,12 @@ Route::middleware(['auth',AdminMiddleware::class])->group(function () {
 
     Route::get('/admin/returns', [App\Http\Controllers\ReturnController::class, 'index'])->name('admin.returns');
 
+    // ----------------------------------------------------------------------------
+    // Approvals Routes
+    // Maps exactly to the workflow discussed. Note: we will need to create the ApprovalController next.
+    Route::get('/admin/approvals', [ApprovalController::class, 'index'])->name('admin.approvals');
+    Route::put('/admin/approvals/payroll/{id}/{action}', [ApprovalController::class, 'handlePayroll'])->name('admin.approvals.payroll');
+    Route::put('/admin/approvals/return/{id}/{action}', [ApprovalController::class, 'handleReturn'])->name('admin.approvals.return');
 
     // ----------------------------------------------------------------------------
 
@@ -67,7 +74,6 @@ Route::middleware(['auth',AdminMiddleware::class])->group(function () {
 
     Route::post('/admin/employee/viewProfile/updatePassword',[UserController::class,'updatePassword'])->name('employee.updatePassword');
 
-    // FIXED: Added the route to actually FIRE (Delete) the employee
     Route::delete('/admin/employee/fire/{id}', [UserController::class, 'fireEmployee'])->name('admin.employee.destroy');
 
     // ----------------------------------------------------------------------------
