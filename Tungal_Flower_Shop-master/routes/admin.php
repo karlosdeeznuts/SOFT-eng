@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth',AdminMiddleware::class])->group(function () {
 
     Route::get('/admin/payroll', [App\Http\Controllers\UserController::class, 'payroll'])->name('admin.payroll');
-Route::post('/admin/payroll/store', [App\Http\Controllers\UserController::class, 'storePayroll'])->name('admin.storePayroll');
+    Route::post('/admin/payroll/store', [App\Http\Controllers\UserController::class, 'storePayroll'])->name('admin.storePayroll');
+    Route::put('/admin/payroll/update/{id}', [App\Http\Controllers\UserController::class, 'updatePayroll'])->name('admin.updatePayroll');
 
     // Admin Routes
     Route::get('/admin/dashboard', [UserController::class,'dashboard'])
@@ -65,6 +66,9 @@ Route::post('/admin/payroll/store', [App\Http\Controllers\UserController::class,
     Route::post('/admin/employee/viewProfile/updateUserInfo',[UserController::class,'updateUserInfo'])->name('employee.updateUserInfo');
 
     Route::post('/admin/employee/viewProfile/updatePassword',[UserController::class,'updatePassword'])->name('employee.updatePassword');
+
+    // FIXED: Added the route to actually FIRE (Delete) the employee
+    Route::delete('/admin/employee/fire/{id}', [UserController::class, 'fireEmployee'])->name('admin.employee.destroy');
 
     // ----------------------------------------------------------------------------
 

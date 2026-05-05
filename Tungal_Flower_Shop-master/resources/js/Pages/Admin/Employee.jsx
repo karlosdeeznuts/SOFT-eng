@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../Layout/AdminLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import profilePlaceholder from '../../../../public/assets/images/profile.png';
 import AddEmployee from './Employee_Features/AddEmployee'; // <-- THIS IMPORT IS CRITICAL
 
 const UserIconFilled = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+    </svg>
+);
+
+const FireIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 6h18"></path>
+        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+        <line x1="10" y1="11" x2="10" y2="17"></line>
+        <line x1="14" y1="11" x2="14" y2="17"></line>
     </svg>
 );
 
@@ -49,6 +59,15 @@ function Employee({ employees }) {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const displayedEmployees = filteredEmployees.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
+    // FIXED: The fire action logic
+    const handleFire = (id) => {
+        if (confirm("Are you sure you want to fire this employee? This action cannot be undone.")) {
+            router.delete(route('admin.employee.destroy', id), {
+                preserveScroll: true
+            });
+        }
+    };
+
     return (
         <div className="container-fluid py-5 px-5" style={{ minHeight: '100vh', backgroundColor: '#F4F5FA', fontFamily: "'Poppins', sans-serif" }}>
             <Head title="Employee" />
@@ -82,9 +101,7 @@ function Employee({ employees }) {
             {/* 2x2 Grid */}
             <div className="row row-cols-1 row-cols-md-2 g-5 mb-5">
                 {displayedEmployees.length > 0 ? (
-                    displayedEmployees.map((employee, index) => {
-                        const displayIndex = startIndex + index + 1;
-                        
+                    displayedEmployees.map((employee) => {
                         return (
                             <div className="col" key={employee.id}>
                                 <div className="card shadow-sm border-0 h-100" style={{ borderRadius: '16px' }}>
@@ -108,8 +125,9 @@ function Employee({ employees }) {
                                             </h4>
                                             
                                             <div className="d-flex align-items-center gap-3 mb-2" style={{ fontSize: '16px' }}>
+                                                {/* FIXED: Displaying the actual database ID instead of loop index */}
                                                 <span className="fw-bold" style={{ color: '#5A637A' }}>
-                                                    {String(displayIndex).padStart(2, '0')}
+                                                    {String(employee.id).padStart(2, '0')}
                                                 </span>
                                                 <span style={{ color: '#7E869E' }}>{employee.role}</span>
                                             </div>
@@ -121,13 +139,24 @@ function Employee({ employees }) {
                                                 </span>
                                             </div>
 
-                                            <Link
-                                                href={route('employee.viewProfile', { user_id: employee.id })}
-                                                className="d-flex align-items-center gap-2 fw-bold text-decoration-none"
-                                                style={{ color: '#7859FF', fontSize: '15px' }}
-                                            >
-                                                <UserIconFilled /> View
-                                            </Link>
+                                            <div className="d-flex align-items-center gap-4 mt-1">
+                                                <Link
+                                                    href={route('employee.viewProfile', { user_id: employee.id })}
+                                                    className="d-flex align-items-center gap-2 fw-bold text-decoration-none"
+                                                    style={{ color: '#7859FF', fontSize: '15px' }}
+                                                >
+                                                    <UserIconFilled /> View
+                                                </Link>
+
+                                                {/* FIXED: Added the Fire Button */}
+                                                <button
+                                                    onClick={() => handleFire(employee.id)}
+                                                    className="btn btn-link d-flex align-items-center gap-1 fw-bold text-decoration-none p-0 m-0 shadow-none"
+                                                    style={{ color: '#dc3545', fontSize: '15px' }}
+                                                >
+                                                    <FireIcon /> Fire
+                                                </button>
+                                            </div>
                                         </div>
 
                                     </div>

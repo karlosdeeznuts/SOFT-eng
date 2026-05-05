@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../../Layout/AdminLayout';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { useRoute } from '../../../../../vendor/tightenco/ziggy';
 import { Toaster, toast } from 'sonner';
 import profilePlaceholder from '../../../../../public/assets/images/profile.png';
@@ -178,6 +178,13 @@ export default function ViewProfile({ user_info }) {
         post(route('employee.updateUserInfo'));
     };
 
+    // FIXED: Added Fire function with confirmation prompt
+    const handleFire = () => {
+        if (confirm("Are you sure you want to fire this employee? This action cannot be undone.")) {
+            router.delete(route('admin.employee.destroy', targetData.id));
+        }
+    };
+
     return (
         <div className="container-fluid py-5 px-5" style={{ minHeight: '100vh', backgroundColor: '#F4F5FA', fontFamily: "'Poppins', sans-serif" }}>
             <Head title="Employee Profile" />
@@ -317,7 +324,8 @@ export default function ViewProfile({ user_info }) {
                             </div>
 
                             <div className="d-flex justify-content-end gap-3 mt-4">
-                                <button type="button" className="btn d-flex align-items-center gap-2 fw-bold text-white px-4 border-0 shadow-sm" style={{ backgroundColor: '#DC3545', borderRadius: '8px', height: '42px' }}>
+                                {/* FIXED: Added onClick to trigger the fire action */}
+                                <button type="button" onClick={handleFire} className="btn d-flex align-items-center gap-2 fw-bold text-white px-4 border-0 shadow-sm" style={{ backgroundColor: '#DC3545', borderRadius: '8px', height: '42px' }}>
                                     <UserRemoveIcon /> Fire
                                 </button>
                                 <button type="submit" disabled={processing} className="btn d-flex align-items-center gap-2 fw-bold text-white px-4 border-0 shadow-sm" style={{ backgroundColor: '#0D6EFD', borderRadius: '8px', height: '42px' }}>

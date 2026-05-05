@@ -188,6 +188,20 @@ class UserController extends Controller
         ]);
     }
 
+    // FIXED: Properly routes back to the main employee page so it doesn't 404
+    public function fireEmployee($id) {
+        $employee = User::findOrFail($id);
+        
+        if ($employee->id === auth()->id()) {
+            return redirect()->back()->with('error', 'You cannot fire yourself.');
+        }
+        
+        $employee->delete();
+        
+        // REDIRECTS TO MAIN EMPLOYEE PAGE, NOT BACK
+        return redirect()->route('admin.employee')->with('success', 'Employee fired successfully.');
+    }
+
     public function storeAttendance(Request $request) {
         $request->validate([
             'user_id' => 'required|exists:users,id',
@@ -308,14 +322,9 @@ class UserController extends Controller
         }
     }
 
-    // ===============================================
-    // REFACTORED: SALES/ORDER HISTORY LOGIC
-    // ===============================================
-
     public function sales(){
         $employees = User::whereIn('role', ['Manager', 'Cashier', 'Delivery', 'Employee'])->get();
         
-        // Eager load details with products, and the user who handled it
         $orders = Order::with(['details.product', 'user'])->latest()->paginate(12);
 
         return inertia('Admin/Sales',[
@@ -401,10 +410,6 @@ class UserController extends Controller
         return redirect()->route('customer.profile')->with('success', 'Password updated successfully.');
     }
 
-    // ===============================================
-    // NEW: PAYROLL LOGIC
-    // ===============================================
-
     public function payroll(){
         $employees = User::whereIn('role', ['Manager', 'Cashier', 'Delivery', 'Employee'])->get();
         
@@ -431,7 +436,6 @@ class UserController extends Controller
             'gross_pay' => 'required|numeric|min:0',
         ]);
 
-        // Explicitly set the status to 'Pending' exactly as required for the Owner's Approvals
         $fields['status'] = 'Pending';
 
         $payroll = Payroll::create($fields);
@@ -441,5 +445,26 @@ class UserController extends Controller
         } else {
             return redirect()->back()->with('error', 'Failed to generate payroll record.');
         }
+    }
+
+    public function updatePayroll(Request $request, $id){
+        $fields = $request->validate([
+            'employee_id' => 'required|exists:users,id',
+            'payroll_date' => 'required|date',
+            'salary_method' => 'required|string',
+            'rate' => 'required|numeric|min:0',
+            'days_worked' => 'required|numeric|min:0',
+            'regular_ot' => 'required|numeric|min:0',
+            'total_ot_pay' => 'required|numeric|min:0',
+            'ecola' => 'required|numeric|min:0',
+            'allowance' => 'required|numeric|min:0',
+            'other_pay' => 'required|numeric|min:0',
+            'gross_pay' => 'required|numeric|min:0',
+        ]);
+
+        $payroll = Payroll::findOrFail($id);
+        $payroll->update($fields);
+
+        return redirect()->back()->with('success', 'Payroll record successfully updated.');
     }
 }
