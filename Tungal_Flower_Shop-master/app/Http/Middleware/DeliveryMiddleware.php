@@ -12,8 +12,9 @@ class DeliveryMiddleware
     {
         $user = $request->user();
 
-        switch($user->role){
-            case 'Delivery':
+        $role = strtolower($user->role);
+        switch($role){
+            case 'delivery':
                 return $next($request);
                 break;
             default:

@@ -37,6 +37,9 @@ const ViewReturnModal = ({ isOpen, onClose, record }) => {
     // Extracting Cashier safely
     const cashierName = req.cashier ? `${req.cashier.firstname} ${req.cashier.lastname}` : 'Unknown Cashier';
 
+    // Synchronize Status Badge Color
+    const isRefundedOrApproved = ['Approved', 'Refunded'].includes(record.status);
+
     return (
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.6)', zIndex: 1050 }}>
             <div className="card shadow-lg border-0 overflow-hidden" style={{ borderRadius: '24px', width: '100%', maxWidth: '650px', backgroundColor: '#FFF' }}>
@@ -59,8 +62,9 @@ const ViewReturnModal = ({ isOpen, onClose, record }) => {
                         </div>
                         <div className="text-end">
                             <span className="text-muted fw-bold d-block mb-1" style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</span>
-                            <span className={`badge px-3 py-2 rounded-pill fs-6 ${record.status === 'Restocked' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
-                                {record.status}
+                            {/* FIXED: Synced Badge Colors */}
+                            <span className={`badge px-3 py-2 rounded-pill fs-6 ${isRefundedOrApproved ? 'bg-danger text-white' : 'bg-warning text-dark'}`}>
+                                {record.status === 'Approved' ? 'Refunded' : record.status}
                             </span>
                         </div>
                     </div>
@@ -191,35 +195,40 @@ export default function Returns({ returns }) {
                         </thead>
                         <tbody>
                             {tableRows.length > 0 ? (
-                                tableRows.map((row, index) => (
-                                    // FIXED: Made the entire row clickable to trigger the modal, plus added a hover effect
-                                    <tr 
-                                        key={`${row.return_id}-${row.flower_id}`} 
-                                        style={{ borderBottom: index !== tableRows.length - 1 ? '1px solid #F0F0F5' : 'none', cursor: 'pointer' }}
-                                        onClick={() => openViewModal(row)}
-                                    >
-                                        <td className="py-3 fw-bold text-dark" style={{ fontSize: '14px' }}>{row.invoice}</td>
-                                        <td className="py-3 fw-bold text-dark" style={{ fontSize: '14px' }}>{row.flower_name}</td>
-                                        <td className="py-3 text-dark" style={{ fontSize: '14px' }}>{row.type}</td>
-                                        <td className="py-3 fw-bold text-dark" style={{ fontSize: '14px' }}>{row.quantity}</td>
-                                        <td className="py-3 text-dark" style={{ fontSize: '14px' }}>{row.reason}</td>
-                                        <td className="py-3">
-                                            <span className={`badge px-3 py-2 rounded-pill ${row.status === 'Restocked' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
-                                                {row.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-3">
-                                            {/* Changed to View Button */}
-                                            <button 
-                                                className="btn btn-sm d-inline-flex align-items-center justify-content-center gap-2 fw-semibold shadow-sm text-dark" 
-                                                style={{ backgroundColor: '#E3E4ED', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', border: 'none' }}
-                                                onClick={(e) => { e.stopPropagation(); openViewModal(row); }} // Prevents double firing from row click
-                                            >
-                                                <ViewIcon /> View
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
+                                tableRows.map((row, index) => {
+                                    // FIXED: Sync Status Logic
+                                    const isRefundedOrApproved = ['Approved', 'Refunded'].includes(row.status);
+                                    const displayStatus = row.status === 'Approved' ? 'Refunded' : row.status;
+
+                                    return (
+                                        <tr 
+                                            key={`${row.return_id}-${row.flower_id}`} 
+                                            style={{ borderBottom: index !== tableRows.length - 1 ? '1px solid #F0F0F5' : 'none', cursor: 'pointer' }}
+                                            onClick={() => openViewModal(row)}
+                                        >
+                                            <td className="py-3 fw-bold text-dark" style={{ fontSize: '14px' }}>{row.invoice}</td>
+                                            <td className="py-3 fw-bold text-dark" style={{ fontSize: '14px' }}>{row.flower_name}</td>
+                                            <td className="py-3 text-dark" style={{ fontSize: '14px' }}>{row.type}</td>
+                                            <td className="py-3 fw-bold text-dark" style={{ fontSize: '14px' }}>{row.quantity}</td>
+                                            <td className="py-3 text-dark" style={{ fontSize: '14px' }}>{row.reason}</td>
+                                            <td className="py-3">
+                                                {/* FIXED: Synced Badge Colors */}
+                                                <span className={`badge px-3 py-2 rounded-pill ${isRefundedOrApproved ? 'bg-danger text-white' : 'bg-warning text-dark'}`}>
+                                                    {displayStatus}
+                                                </span>
+                                            </td>
+                                            <td className="py-3">
+                                                <button 
+                                                    className="btn btn-sm d-inline-flex align-items-center justify-content-center gap-2 fw-semibold shadow-sm text-dark" 
+                                                    style={{ backgroundColor: '#E3E4ED', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', border: 'none' }}
+                                                    onClick={(e) => { e.stopPropagation(); openViewModal(row); }}
+                                                >
+                                                    <ViewIcon /> View
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             ) : (
                                 <tr>
                                     <td colSpan="7" className="text-center text-muted py-5">No active return requests.</td>

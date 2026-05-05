@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\OrderDetail;
 use App\Models\Attendance;
+use App\Models\Payroll;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -26,7 +27,6 @@ class UserController extends Controller
 
             $user = Auth::user(); 
 
-            // Group the dashboard routes cleanly using arrays
             if(in_array($user->role, ['Admin', 'Manager', 'Owner'])){
                 return redirect()->intended('/admin/dashboard');
             }elseif(in_array($user->role, ['Cashier', 'Employee'])){
@@ -43,11 +43,11 @@ class UserController extends Controller
     }
 
     public function dashboard(){
-        // 1. Top Metric Cards
-        $total_flowers_in_store = Product::sum('stocks');
+        $allProducts = Product::with('batches')->get();
+        
+        $total_flowers_in_store = $allProducts->sum('stocks');
         $recent_orders_count = Order::where('created_at', '>=', now()->subDays(30))->count();
 
-        // 2. Sales Summary Chart (Top 7 for visual variety)
         $chartData = OrderDetail::with('product')
             ->selectRaw('product_id, SUM(quantity) as total_sales')
             ->groupBy('product_id')
@@ -55,7 +55,6 @@ class UserController extends Controller
             ->take(7)
             ->get();
 
-        // 3. Bottom Cards: Top 3 and Least 3
         $topSellingProducts = OrderDetail::with('product')
             ->selectRaw('product_id, SUM(quantity) as total_sales')
             ->groupBy('product_id')
@@ -66,16 +65,14 @@ class UserController extends Controller
         $leastSellingProducts = OrderDetail::with('product')
             ->selectRaw('product_id, SUM(quantity) as total_sales')
             ->groupBy('product_id')
-            ->orderBy('total_sales', 'asc') // Sort ascending for least sellers
+            ->orderBy('total_sales', 'asc') 
             ->take(3)
             ->get();
 
-        // 4. Stock Numbers Summary
-        $low_stock_count = Product::where('stocks', '<=', 10)->count(); // Anything 10 or below is 'Low'
+        $low_stock_count = $allProducts->where('stocks', '<=', 10)->count(); 
         $total_categories = Product::count(); 
         $recently_added = Product::where('created_at', '>=', now()->subDays(7))->count();
         
-        // Using the newly created ReturnRequest model for the bridge we just built!
         $returned_flowers = \App\Models\ReturnRequest::count();
 
         return inertia('Admin/Dashboard',[
@@ -92,15 +89,13 @@ class UserController extends Controller
     }
 
     public function report(){
-        // 1. CRITICAL STOCK ALERTS
-        // Fetch products with 15 or less stock, ordered lowest first
-        $lowStockProducts = Product::where('stocks', '<=', 15)->orderBy('stocks', 'asc')->get();
+        $allProducts = Product::with('batches')->get();
+        $lowStockProducts = $allProducts->where('stocks', '<=', 15)->sortBy('stocks')->values();
 
         $stockAlerts = $lowStockProducts->map(function($product) {
             $type = 'attention';
             $label = 'Attention !';
 
-            // Map database stock levels to your exact UI categories
             if ($product->stocks == 0) {
                 $type = 'out_of_stock';
                 $label = 'Out of Stock';
@@ -122,26 +117,21 @@ class UserController extends Controller
             ];
         });
 
-        // 2. SALES & CUSTOMERS OVERVIEW
         $totalSales = Order::sum('total');
         $totalOrders = Order::count();
         $avgSales = $totalOrders > 0 ? $totalSales / $totalOrders : 0;
 
-        // Calculate Trends (Last 30 Days vs Previous 30 Days)
         $current30Start = now()->subDays(30);
         $prev30Start = now()->subDays(60);
 
-        // Sales Trend
         $currentSales = Order::where('created_at', '>=', $current30Start)->sum('total');
         $prevSales = Order::whereBetween('created_at', [$prev30Start, $current30Start])->sum('total');
         $salesTrend = $prevSales > 0 ? round((($currentSales - $prevSales) / $prevSales) * 100) : 0;
 
-        // Orders Trend
         $currentOrdersCount = Order::where('created_at', '>=', $current30Start)->count();
         $prevOrdersCount = Order::whereBetween('created_at', [$prev30Start, $current30Start])->count();
         $ordersTrend = $prevOrdersCount > 0 ? round((($currentOrdersCount - $prevOrdersCount) / $prevOrdersCount) * 100) : 0;
 
-        // Average Sales Trend
         $currentAvg = $currentOrdersCount > 0 ? $currentSales / $currentOrdersCount : 0;
         $prevAvg = $prevOrdersCount > 0 ? $prevSales / $prevOrdersCount : 0;
         $avgTrend = $prevAvg > 0 ? round((($currentAvg - $prevAvg) / $prevAvg) * 100) : 0;
@@ -196,6 +186,20 @@ class UserController extends Controller
         return inertia('Admin/Employee_Features/ViewProfile', [
             'user_info' => $employee_profile
         ]);
+    }
+
+    // FIXED: Properly routes back to the main employee page so it doesn't 404
+    public function fireEmployee($id) {
+        $employee = User::findOrFail($id);
+        
+        if ($employee->id === auth()->id()) {
+            return redirect()->back()->with('error', 'You cannot fire yourself.');
+        }
+        
+        $employee->delete();
+        
+        // REDIRECTS TO MAIN EMPLOYEE PAGE, NOT BACK
+        return redirect()->route('admin.employee')->with('success', 'Employee fired successfully.');
     }
 
     public function storeAttendance(Request $request) {
@@ -318,58 +322,30 @@ class UserController extends Controller
         }
     }
 
-    public function sales($order_id = null){
+    public function sales(){
         $employees = User::whereIn('role', ['Manager', 'Cashier', 'Delivery', 'Employee'])->get();
+        
+        $orders = Order::with(['details.product', 'user'])->latest()->paginate(12);
 
-        if($order_id == null){
-            $order_id_list = OrderDetail::select('order_id')->distinct()->latest()->get();
-            $orders = Order::latest()->paginate(12);
-
-            return inertia('Admin/Sales',[
-                'employees' => $employees,
-                'order_id' => $order_id_list,
-                'orders' => $orders,
-                'currentSelected_ID' => 'All',
-                'parent_order' => null
-            ]);
-        }else{
-            $order_details = OrderDetail::with('product')->where('order_id',$order_id)->latest()->paginate(5);
-            $parent_order = Order::find($order_id); 
-            
-            return inertia('Admin/Sales',[
-                'employees' => $employees,
-                'order_id' => null,
-                'orders' => $order_details,
-                'currentSelected_ID' => 'All',
-                'parent_order' => $parent_order 
-            ]);
-        } 
+        return inertia('Admin/Sales',[
+            'employees' => $employees,
+            'orders' => $orders,
+            'currentSelected_ID' => 'All'
+        ]);
     }
 
     public function selectedEmployee($user_id){
         $employees = User::whereIn('role', ['Manager', 'Cashier', 'Delivery', 'Employee'])->get();
-        if($user_id != 'All'){
-            $order_id_list = OrderDetail::select('order_id')->where('user_id',$user_id)->distinct()->latest()->get();
-            $orders = Order::where('user_id',$user_id)->latest()->paginate(12);
 
+        if($user_id != 'All'){
+            $orders = Order::with(['details.product', 'user'])->where('user_id', $user_id)->latest()->paginate(12);
             return inertia('Admin/Sales',[
                 'employees' => $employees,
-                'order_id' => $order_id_list,
                 'orders' => $orders,
-                'currentSelected_ID' => $user_id,
-                'parent_order' => null
+                'currentSelected_ID' => $user_id
             ]);
         }else{
-            $order_id_list = OrderDetail::select('order_id')->distinct()->latest()->get();
-            $orders = Order::latest()->paginate(12);
-
-            return inertia('Admin/Sales',[
-                'employees' => $employees,
-                'order_id' => $order_id_list,
-                'orders' => $orders,
-                'currentSelected_ID' => 'All',
-                'parent_order' => null
-            ]);
+            return redirect()->route('admin.sales');
         }
     }
 
@@ -378,14 +354,12 @@ class UserController extends Controller
         $cleanId = preg_replace('/\D+/', '', $rawId);
         
         $employees = User::whereIn('role', ['Manager', 'Cashier', 'Delivery', 'Employee'])->get();
-        $orders = Order::where('id', $cleanId)->latest()->paginate(12);
+        $orders = Order::with(['details.product', 'user'])->where('id', $cleanId)->latest()->paginate(12);
 
         return inertia('Admin/Sales',[
             'employees' => $employees,
-            'order_id' => [],
             'orders' => $orders,
-            'currentSelected_ID' => 'All',
-            'parent_order' => null
+            'currentSelected_ID' => 'All'
         ]);
     }
 
@@ -434,5 +408,63 @@ class UserController extends Controller
         ]);
 
         return redirect()->route('customer.profile')->with('success', 'Password updated successfully.');
+    }
+
+    public function payroll(){
+        $employees = User::whereIn('role', ['Manager', 'Cashier', 'Delivery', 'Employee'])->get();
+        
+        $payrolls = Payroll::with('employee')->latest()->paginate(10);
+
+        return inertia('Admin/Payroll', [
+            'employees' => $employees,
+            'payrolls' => $payrolls
+        ]);
+    }
+
+    public function storePayroll(Request $request){
+        $fields = $request->validate([
+            'employee_id' => 'required|exists:users,id',
+            'payroll_date' => 'required|date',
+            'salary_method' => 'required|string',
+            'rate' => 'required|numeric|min:0',
+            'days_worked' => 'required|numeric|min:0',
+            'regular_ot' => 'required|numeric|min:0',
+            'total_ot_pay' => 'required|numeric|min:0',
+            'ecola' => 'required|numeric|min:0',
+            'allowance' => 'required|numeric|min:0',
+            'other_pay' => 'required|numeric|min:0',
+            'gross_pay' => 'required|numeric|min:0',
+        ]);
+
+        $fields['status'] = 'Pending';
+
+        $payroll = Payroll::create($fields);
+
+        if($payroll){
+            return redirect()->back()->with('success', 'Payroll record successfully generated.');
+        } else {
+            return redirect()->back()->with('error', 'Failed to generate payroll record.');
+        }
+    }
+
+    public function updatePayroll(Request $request, $id){
+        $fields = $request->validate([
+            'employee_id' => 'required|exists:users,id',
+            'payroll_date' => 'required|date',
+            'salary_method' => 'required|string',
+            'rate' => 'required|numeric|min:0',
+            'days_worked' => 'required|numeric|min:0',
+            'regular_ot' => 'required|numeric|min:0',
+            'total_ot_pay' => 'required|numeric|min:0',
+            'ecola' => 'required|numeric|min:0',
+            'allowance' => 'required|numeric|min:0',
+            'other_pay' => 'required|numeric|min:0',
+            'gross_pay' => 'required|numeric|min:0',
+        ]);
+
+        $payroll = Payroll::findOrFail($id);
+        $payroll->update($fields);
+
+        return redirect()->back()->with('success', 'Payroll record successfully updated.');
     }
 }

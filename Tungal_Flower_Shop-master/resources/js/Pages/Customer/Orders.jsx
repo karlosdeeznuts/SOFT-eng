@@ -59,6 +59,9 @@ function Orders({ orders }) {
         });
     };
 
+    // FIXED: Defines which order_statuses should block the Refund button from rendering
+    const blockedRefundStatuses = ['Under Inspection', 'Refund Requested', 'Refund Approved', 'Refunded'];
+
     return (
         <div className="container-fluid py-4 px-4" style={{ minHeight: '100vh', backgroundColor: '#F5F5FB', fontFamily: "'Poppins', sans-serif" }}>
             <Toaster position="top-right" richColors expand={true} />
@@ -87,9 +90,7 @@ function Orders({ orders }) {
                         <thead style={{ backgroundColor: '#E3E4ED', color: '#1E1E1E' }}>
                             <tr>
                                 <th className="py-3 fw-bolder" style={{ fontSize: '13px' }}>Order ID</th>
-                                {/* RENAMED: 'Quantity' to 'Order Qty' */}
                                 <th className="py-3 fw-bolder" style={{ fontSize: '13px' }}>Order Qty</th>
-                                {/* ADDED: 'Total Pieces' column */}
                                 <th className="py-3 fw-bolder" style={{ fontSize: '13px' }}>Total Pieces</th>
                                 <th className="py-3 fw-bolder" style={{ fontSize: '13px' }}>Source Batches</th>
                                 <th className="py-3 fw-bolder" style={{ fontSize: '13px' }}>Total Amount</th>
@@ -107,14 +108,15 @@ function Orders({ orders }) {
 
                                     const orderId = order.details.length > 0 ? order.details[0].order_id : order.id;
 
-                                    // CALCULATION: Quantitity * Multiplier across all order items
                                     const totalPiecesBought = order.details ? order.details.reduce((sum, d) => 
                                         sum + (parseInt(d.quantity) * parseInt(d.multiplier)), 0) : 0;
 
-                                    // FIX: Extraction logic for batch ID strings stored in OrderDetail
                                     const allUsedBatches = order.details 
                                         ? [...new Set(order.details.flatMap(d => d.batch_ids ? d.batch_ids.split(', ') : []))].join(', ')
                                         : 'N/A';
+
+                                    // Safely grab status handling both potential names
+                                    const displayStatus = order.order_status || order.status || 'Completed';
 
                                     return (
                                         <tr key={order.id} style={{ borderBottom: index !== orders.data.length - 1 ? '1px solid #F0F0F5' : 'none' }}>
@@ -125,7 +127,13 @@ function Orders({ orders }) {
                                             <td className="py-3 text-dark fw-bold" style={{ fontSize: '13px' }}>₱{order.total}</td>
                                             <td className="py-3 text-dark" style={{ fontSize: '12px' }}>{formattedDate}</td>
                                             <td className="py-3">
-                                                <span className="badge bg-success-subtle text-success px-3 py-2 rounded-pill" style={{ fontSize: '11px' }}>{order.order_status}</span>
+                                                <span className={`badge px-3 py-2 rounded-pill ${
+                                                    blockedRefundStatuses.includes(displayStatus) 
+                                                        ? (displayStatus === 'Refunded' ? 'bg-danger' : 'bg-warning text-dark') 
+                                                        : 'bg-success-subtle text-success'
+                                                }`} style={{ fontSize: '11px' }}>
+                                                    {displayStatus}
+                                                </span>
                                             </td>
                                             <td className="py-3">
                                                 <div className="d-flex align-items-center justify-content-center gap-2">
@@ -134,9 +142,12 @@ function Orders({ orders }) {
                                                             <IoReceipt className="fs-5 text-dark" />
                                                         </Link>
                                                     )}
-                                                    <button onClick={() => openReturnModal(orderId)} className="btn btn-sm text-white" style={{ backgroundColor: '#D9534F', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', border: 'none' }} title="Request Refund">
-                                                        Refund
-                                                    </button>
+                                                    {/* FIXED: Conditionally hide Refund button if it's already pending/refunded */}
+                                                    {!blockedRefundStatuses.includes(displayStatus) && (
+                                                        <button onClick={() => openReturnModal(orderId)} className="btn btn-sm text-white" style={{ backgroundColor: '#D9534F', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', border: 'none' }} title="Request Refund">
+                                                            Refund
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -186,6 +197,7 @@ function Orders({ orders }) {
                 </div>
             )}
 
+            {/* ORIGINAL 3-STEP MODAL EXACTLY AS PROVIDED */}
             {refundStep > 0 && (
                 <div className="modal fade show d-block position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: 'rgba(20, 20, 30, 0.5)', zIndex: 1050 }}>
                     <div className="card shadow-lg border-0" style={{ borderRadius: '16px', width: '100%', maxWidth: '450px', backgroundColor: '#FFF' }}>

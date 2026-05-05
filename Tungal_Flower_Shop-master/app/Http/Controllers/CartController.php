@@ -8,6 +8,7 @@ use App\Models\OrderDetail;
 use App\Models\Product;
 use App\Models\ProductBatch;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
 {
@@ -69,74 +70,83 @@ class CartController extends Controller
             return redirect()->back()->with('error', "Insufficient cash received to complete transaction.");
         }
 
-        $store_order = Order::create([
-            'user_id' => $user->id,
-            'quantity' => 0, 
-            'total' => $fields['total'],
-            'discount_percentage' => $fields['discount_percentage'] ?? null,
-            'discount_amount' => $fields['discount_amount'] ?? 0,
-            'cash_recieved' => $fields['cash_received'],
-            'change' => $fields['cash_received'] - $fields['total'],
-        ]);
-        
-        $quantity = 0;
+        try {
+            DB::beginTransaction();
 
-        foreach($fields['cart_id'] as $cart_id){
-            $cart = Cart::where('id',$cart_id)->first();
-            $quantity += $cart->quantity; 
+            $store_order = Order::create([
+                'user_id' => $user->id,
+                'quantity' => 0, 
+                'total' => $fields['total'],
+                'discount_percentage' => $fields['discount_percentage'] ?? null,
+                'discount_amount' => $fields['discount_amount'] ?? 0,
+                'cash_recieved' => $fields['cash_received'],
+                'change' => $fields['cash_received'] - $fields['total'],
+            ]);
+            
+            $quantity = 0;
 
-            $product = Product::find($cart->product_id);
-            $totalPiecesToDeduct = $cart->quantity * $cart->multiplier;
+            foreach($fields['cart_id'] as $cart_id){
+                $cart = Cart::where('id',$cart_id)->first();
+                $quantity += $cart->quantity; 
 
-            // FEFO (First Expired, First Out) Logic
-            $activeBatches = ProductBatch::where('product_id', $product->id)
-                ->where('status', 'active')
-                ->orderByRaw('ISNULL(expires_at), expires_at ASC') 
-                ->get();
+                $product = Product::find($cart->product_id);
+                $totalPiecesToDeduct = $cart->quantity * $cart->multiplier;
 
-            $remainingToDeduct = $totalPiecesToDeduct;
-            $usedBatchIds = [];
+                // FEFO (First Expired, First Out) Logic with Pessimistic Locking
+                $activeBatches = ProductBatch::where('product_id', $product->id)
+                    ->where('status', 'active')
+                    ->lockForUpdate()
+                    ->orderByRaw('ISNULL(expires_at), expires_at ASC') 
+                    ->get();
 
-            foreach ($activeBatches as $batch) {
-                if ($remainingToDeduct <= 0) break;
+                $remainingToDeduct = $totalPiecesToDeduct;
+                $usedBatchIds = [];
 
-                $usedBatchIds[] = "#" . str_pad($batch->id, 3, '0', STR_PAD_LEFT);
+                foreach ($activeBatches as $batch) {
+                    if ($remainingToDeduct <= 0) break;
 
-                if ($batch->quantity <= $remainingToDeduct) {
-                    $remainingToDeduct -= $batch->quantity;
-                    // FIX: Changed status to 'fully_sold' instead of 'expired'
-                    $batch->update(['quantity' => 0, 'status' => 'fully_sold']);
-                } else {
-                    $batch->update(['quantity' => $batch->quantity - $remainingToDeduct]);
-                    $remainingToDeduct = 0;
+                    $usedBatchIds[] = "#" . str_pad($batch->id, 3, '0', STR_PAD_LEFT);
+
+                    if ($batch->quantity <= $remainingToDeduct) {
+                        $remainingToDeduct -= $batch->quantity;
+                        $batch->update(['quantity' => 0, 'status' => 'fully_sold']);
+                    } else {
+                        $batch->update(['quantity' => $batch->quantity - $remainingToDeduct]);
+                        $remainingToDeduct = 0;
+                    }
                 }
+
+                // Guard against Ghost Deductions
+                if ($remainingToDeduct > 0) {
+                    throw new \Exception("Transaction failed: Not enough active batch stock for {$product->product_name}.");
+                }
+
+                OrderDetail::create([
+                    'order_id' => $store_order->id,
+                    'product_id' => $cart->product_id,
+                    'user_id' => $user->id,
+                    'type_name' => $cart->type_name,     
+                    'multiplier' => $cart->multiplier,   
+                    'quantity' => $cart->quantity,
+                    'total' => $cart->subtotal,
+                    'batch_ids' => implode(', ', $usedBatchIds),
+                ]);
             }
 
-            OrderDetail::create([
-                'order_id' => $store_order->id,
-                'product_id' => $cart->product_id,
-                'user_id' => $user->id,
-                'type_name' => $cart->type_name,     
-                'multiplier' => $cart->multiplier,   
-                'quantity' => $cart->quantity,
-                'total' => $cart->subtotal,
-                'batch_ids' => implode(', ', $usedBatchIds),
+            $updateOrder = Order::where('id',$store_order->id)->update([
+                'quantity' => $quantity,
             ]);
 
-            $product->update([
-                'stocks' => $product->calculateActiveStock(),
-            ]);
-        }
-
-        $updateOrder = Order::where('id',$store_order->id)->update([
-            'quantity' => $quantity,
-        ]);
-
-        if($updateOrder){
-            Cart::where('user_id',$user->id)->delete();
-            return redirect()->route('customer.invoice',['order_id' => $store_order->id]);
-        }else{
-            return redirect()->back()->with('error',"Failed to process the transaction.");
+            if($updateOrder){
+                Cart::where('user_id',$user->id)->delete();
+                DB::commit();
+                return redirect()->route('customer.invoice',['order_id' => $store_order->id]);
+            }else{
+                throw new \Exception("Failed to update final order quantity.");
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 

@@ -2,7 +2,7 @@ import React from 'react'
 import logo from '../../../public/assets/images/logo.png'
 import profile from '../../../public/assets/images/profile.png'
 import { Link, usePage } from '@inertiajs/react'
-import { BsFillGridFill, BsBoxSeam, BsFileText, BsTruck, BsArrowReturnLeft, BsCashStack, BsPersonCheck } from "react-icons/bs";
+import { BsFillGridFill, BsBoxSeam, BsFileText, BsTruck, BsArrowReturnLeft, BsCashStack, BsPersonCheck, BsCreditCard } from "react-icons/bs";
 import { IoExit, IoPeople } from "react-icons/io5";
 import { FaBars } from "react-icons/fa6";
 import { useRoute } from '../../../vendor/tightenco/ziggy'
@@ -40,56 +40,49 @@ export default function AdminLayout({ children }) {
                     <h6 className='fw-bold mb-5 mt-2 text-center text-dark' style={{ letterSpacing: '0.5px' }}>TUNGAL'S FLOWER SHOP</h6>
 
                     <nav className="w-100 d-flex flex-column gap-2 mb-auto">
-                        {/* Everyone gets the Dashboard */}
                         <Link href={route('admin.dashboard')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.dashboard') ? activeLinkStyle : inactiveLinkStyle}>
                             <BsFillGridFill className="fs-5" /> Dashboard
                         </Link>
                         
-                        {/* Admin & Manager */}
                         {(role === 'Admin' || role === 'Manager') && (
                             <Link href={route('admin.inventory')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.inventory') ? activeLinkStyle : inactiveLinkStyle}>
                                 <BsBoxSeam className="fs-5" /> Inventory
                             </Link>
                         )}
+
+                        {(role === 'Admin' || role === 'Manager' || role === 'Owner') && (
+                            <Link href={route('admin.sales')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.sales') ? activeLinkStyle : inactiveLinkStyle}>
+                                <BsCashStack className="fs-5" /> Sales
+                            </Link>
+                        )}
                         
-                        {/* Admin & Owner */}
                         {(role === 'Admin' || role === 'Owner') && (
                             <Link href={route('admin.report')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.report') ? activeLinkStyle : inactiveLinkStyle}>
                                 <BsFileText className="fs-5" /> Report
                             </Link>
                         )}
                         
-                        {/* Admin Only */}
-                        {role === 'Admin' && (
-                            <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
-                                <BsTruck className="fs-5" /> Supplier
+                        {(role === 'Admin' || role === 'Manager') && (
+                            <Link href={route('admin.returns')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.returns') ? activeLinkStyle : inactiveLinkStyle}>
+                                <BsArrowReturnLeft className="fs-5" /> Returns
                             </Link>
                         )}
                         
-                        {/* Admin & Manager */}
-                        {(role === 'Admin' || role === 'Manager') && (
-                            <Link href={route('admin.returns')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.returns') ? activeLinkStyle : inactiveLinkStyle}>
-    <BsArrowReturnLeft className="fs-5" /> Returns
-</Link>
-                        )}
-                        
-                        {/* Admin Only */}
                         {role === 'Admin' && (
                             <Link href={route('admin.employee')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.employee') ? activeLinkStyle : inactiveLinkStyle}>
                                 <IoPeople className="fs-5" /> Employee
                             </Link>
                         )}
-                        
-                        {/* Admin Only - NOW WIRED */}
+
                         {role === 'Admin' && (
                             <Link href={route('admin.payroll')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.payroll') ? activeLinkStyle : inactiveLinkStyle}>
-                                <BsCashStack className="fs-5" /> Pay
+                                <BsCreditCard className="fs-5" /> Payroll
                             </Link>
                         )}
                         
-                        {/* Owner Only */}
-                        {role === 'Owner' && (
-                            <Link href="#" className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={inactiveLinkStyle}>
+                        {/* CHANGED: Approvals is now accessible by Admin OR Owner, properly linked */}
+                        {(role === 'Owner' || role === 'Admin') && (
+                            <Link href={route('admin.approvals')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.approvals') ? activeLinkStyle : inactiveLinkStyle}>
                                 <BsPersonCheck className="fs-5" /> Approvals
                             </Link>
                         )}
@@ -138,6 +131,12 @@ export default function AdminLayout({ children }) {
                                     <BsBoxSeam /> Inventory
                                 </Link>
                             )}
+
+                            {(role === 'Admin' || role === 'Manager' || role === 'Owner') && (
+                                <Link href={route('admin.sales')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.sales') ? activeLinkStyle : inactiveLinkStyle}>
+                                    <BsCashStack /> Sales
+                                </Link>
+                            )}
                             
                             {(role === 'Admin' || role === 'Owner') && (
                                 <Link href={route('admin.report')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.report') ? activeLinkStyle : inactiveLinkStyle}>
@@ -145,18 +144,31 @@ export default function AdminLayout({ children }) {
                                 </Link>
                             )}
                             
+                            {(role === 'Admin' || role === 'Manager') && (
+                                <Link href={route('admin.returns')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.returns') ? activeLinkStyle : inactiveLinkStyle}>
+                                    <BsArrowReturnLeft /> Returns
+                                </Link>
+                            )}
+
                             {role === 'Admin' && (
                                 <Link href={route('admin.employee')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.employee') ? activeLinkStyle : inactiveLinkStyle}>
                                     <IoPeople /> Employee
                                 </Link>
                             )}
 
-                            {/* ADDED: Mobile Pay Route */}
                             {role === 'Admin' && (
                                 <Link href={route('admin.payroll')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none" style={route().current('admin.payroll') ? activeLinkStyle : inactiveLinkStyle}>
-                                    <BsCashStack /> Pay
+                                    <BsCreditCard /> Payroll
                                 </Link>
                             )}
+
+                            {/* CHANGED: Approvals is now accessible by Admin OR Owner, properly linked */}
+                            {(role === 'Owner' || role === 'Admin') && (
+                                <Link href={route('admin.approvals')} className="d-flex align-items-center gap-3 rounded p-3 text-decoration-none sidebar-item-custom" style={route().current('admin.approvals') ? activeLinkStyle : inactiveLinkStyle}>
+                                    <BsPersonCheck className="fs-5" /> Approvals
+                                </Link>
+                            )}
+
                         </nav>
 
                         <div className="mt-4 pt-4 border-top d-flex flex-column align-items-center">

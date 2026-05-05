@@ -22,6 +22,7 @@
 /node_modules
 /vendor
 .env
+.clinerules
 
 # Ignore local user-uploaded files
 /Tungal_Flower_Shop-master/storage/app/public/products/*
