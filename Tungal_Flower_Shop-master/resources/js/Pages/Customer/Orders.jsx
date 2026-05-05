@@ -59,6 +59,12 @@ function Orders({ orders }) {
         });
     };
 
+    // Safely determine if the refund button should be hidden based on the order's status
+    const isRefundBlocked = (status) => {
+        const blockedStatuses = ['Under Inspection', 'Refund Requested', 'Refund Approved', 'Refunded'];
+        return blockedStatuses.includes(status);
+    };
+
     return (
         <div className="container-fluid py-4 px-4" style={{ minHeight: '100vh', backgroundColor: '#F5F5FB', fontFamily: "'Poppins', sans-serif" }}>
             <Toaster position="top-right" richColors expand={true} />
@@ -125,7 +131,7 @@ function Orders({ orders }) {
                                             <td className="py-3 text-dark fw-bold" style={{ fontSize: '13px' }}>₱{order.total}</td>
                                             <td className="py-3 text-dark" style={{ fontSize: '12px' }}>{formattedDate}</td>
                                             <td className="py-3">
-                                                <span className="badge bg-success-subtle text-success px-3 py-2 rounded-pill" style={{ fontSize: '11px' }}>{order.order_status}</span>
+                                                <span className="badge bg-success-subtle text-success px-3 py-2 rounded-pill" style={{ fontSize: '11px' }}>{order.order_status || order.status}</span>
                                             </td>
                                             <td className="py-3">
                                                 <div className="d-flex align-items-center justify-content-center gap-2">
@@ -134,9 +140,12 @@ function Orders({ orders }) {
                                                             <IoReceipt className="fs-5 text-dark" />
                                                         </Link>
                                                     )}
-                                                    <button onClick={() => openReturnModal(orderId)} className="btn btn-sm text-white" style={{ backgroundColor: '#D9534F', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', border: 'none' }} title="Request Refund">
-                                                        Refund
-                                                    </button>
+                                                    {/* FIXED: Refund button is hidden if order is already processed for a refund */}
+                                                    {!isRefundBlocked(order.order_status || order.status) && (
+                                                        <button onClick={() => openReturnModal(orderId)} className="btn btn-sm text-white" style={{ backgroundColor: '#D9534F', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', border: 'none' }} title="Request Refund">
+                                                            Refund
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

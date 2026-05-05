@@ -21,12 +21,18 @@ class ApprovalController extends Controller
             ->latest()
             ->get();
 
-        $pendingReturns = ReturnRequest::with(['order.details.product'])
+        // FIXED: Eager load 'cashier' to display who processed it
+        $pendingReturns = ReturnRequest::with(['order.details.product', 'cashier'])
             ->where('status', 'Under Inspection')
             ->latest()
             ->get()
             ->map(function ($return) {
+                // Safely calculate refund amount
                 $return->refund_amount = $return->order ? $return->order->total : 0;
+                
+                // FIXED: Calculate total quantity of items returned from the order details
+                $return->total_quantity = $return->order ? $return->order->details->sum('quantity') : 0;
+
                 return $return;
             });
 
@@ -70,7 +76,7 @@ class ApprovalController extends Controller
                 // 1. Update the return request status
                 $returnRequest->update(['status' => 'Approved']);
                 
-                // 2. FIXED: Update the original Order status so the Sales/Order History reflects the change
+                // 2. Update the original Order status so the Sales/Order History reflects the change
                 if ($returnRequest->order) {
                     $returnRequest->order->update(['status' => 'Refunded']);
                 }
@@ -100,9 +106,9 @@ class ApprovalController extends Controller
                 // 1. Update the return request status
                 $returnRequest->update(['status' => 'Rejected']);
                 
-                // 2. FIXED: Revert the original Order status back to Paid/Completed since the refund was denied
+                // 2. Revert the original Order status back to Paid/Completed since the refund was denied
                 if ($returnRequest->order) {
-                    $returnRequest->order->update(['status' => 'Paid']); // Or 'Completed', whatever your default completed status is
+                    $returnRequest->order->update(['status' => 'Paid']);
                 }
 
                 DB::commit();

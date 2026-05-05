@@ -110,16 +110,39 @@ const ReviewReturnModal = ({ isOpen, onClose, record }) => {
                             <span className="fw-bold text-dark">#{String(record.id).padStart(4, '0')}</span>
                         </div>
                         <div className="d-flex justify-content-between border-bottom pb-2">
+                            <span className="fw-medium text-muted">Order ID:</span>
+                            <span className="fw-bold text-dark">#{String(record.order_id).padStart(4, '0')}</span>
+                        </div>
+                        {/* FIXED: Included Cashier Information */}
+                        <div className="d-flex justify-content-between border-bottom pb-2">
+                            <span className="fw-medium text-muted">Cashier:</span>
+                            <span className="fw-bold text-dark">
+                                {record.cashier ? `${record.cashier.firstname} ${record.cashier.lastname}` : 'Unknown'}
+                            </span>
+                        </div>
+                        {/* FIXED: Exact Date and Time formatting */}
+                        <div className="d-flex justify-content-between border-bottom pb-2">
+                            <span className="fw-medium text-muted">Date & Time:</span>
+                            <span className="fw-bold text-dark">
+                                {new Date(record.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(record.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        </div>
+                        <div className="d-flex justify-content-between border-bottom pb-2">
                             <span className="fw-medium text-muted">Reason:</span>
                             <span className="fw-bold text-dark">{record.reason || 'Not Specified'}</span>
                         </div>
                         <div className="d-flex justify-content-between border-bottom pb-2">
+                            <span className="fw-medium text-muted">Method:</span>
+                            <span className="fw-bold text-dark">{record.refund_method || 'N/A'}</span>
+                        </div>
+                        {/* FIXED: Now outputs the correctly mapped quantity */}
+                        <div className="d-flex justify-content-between border-bottom pb-2">
                             <span className="fw-medium text-muted">Quantity Returned:</span>
-                            <span className="fw-bold text-dark">{record.quantity || 0}</span>
+                            <span className="fw-bold text-dark">{record.total_quantity || 0} items</span>
                         </div>
                         <div className="d-flex justify-content-between border-bottom pb-2">
                             <span className="fw-medium text-muted">Amount to Refund:</span>
-                            <span className="fw-bold text-danger">₱{record.refund_amount || record.amount || 0}</span>
+                            <span className="fw-bold text-danger">₱{record.refund_amount || 0}</span>
                         </div>
                     </div>
 
@@ -317,7 +340,7 @@ export default function Approvals({ pendingPayrolls = [], pendingReturns = [] })
                                                 </td>
                                                 <td className="py-4">
                                                     <span className="badge bg-warning text-dark px-3 py-2 rounded-pill" style={{ fontSize: '12px' }}>
-                                                        Pending
+                                                        Under Inspection
                                                     </span>
                                                 </td>
                                                 <td className="py-4">
