@@ -10,8 +10,7 @@ class OrderController extends Controller
 {
     public function orders() {
         try {
-            $orders = Order::with('details') 
-                ->where('user_id', auth()->id())
+            $orders = Order::with(['details.product', 'user'])
                 ->latest()
                 ->paginate(10);
         
@@ -63,7 +62,8 @@ class OrderController extends Controller
                 ->firstOrFail();
             
             if ($request->hasFile('proof_image')) {
-                $path = $request->file('proof_image')->store('proofs', 'public');
+                $uploadedProof = cloudinary()->uploadApi()->upload($request->file('proof_image')->getRealPath(), ['folder' => 'proofs']);
+                $path = $uploadedProof['secure_url'];
                 $order->update([
                     'delivery_proof' => $path,
                     'order_status' => 'Delivered',
