@@ -52,6 +52,11 @@ class ApprovalController extends Controller
      */
     public function handlePayroll(Request $request, $id, $action)
     {
+        // Enforce role constraint: Only Owner role can approve or reject payrolls
+        if (auth()->user()->role !== 'Owner') {
+            abort(403, 'Unauthorized action: Only Owners can process or approve payrolls.');
+        }
+
         // 404 mapped gap: findOrFail throws a strict 404 if the record doesn't exist
         $payroll = Payroll::findOrFail($id);
 
@@ -61,7 +66,10 @@ class ApprovalController extends Controller
         }
 
         if ($action === 'approve') {
-            $payroll->update(['status' => 'Approved']);
+            $payroll->update([
+                'status' => 'Approved',
+                'processed_by_user_id' => auth()->id(),
+            ]);
             return redirect()->back()->with('success', 'Payroll has been successfully approved.');
         } 
         
@@ -73,7 +81,8 @@ class ApprovalController extends Controller
 
             $payroll->update([
                 'status' => 'Rejected',
-                'rejection_reason' => $request->rejection_reason
+                'rejection_reason' => $request->rejection_reason,
+                'processed_by_user_id' => auth()->id(),
             ]);
             return redirect()->back()->with('success', 'Payroll has been rejected.');
         }
@@ -99,7 +108,10 @@ class ApprovalController extends Controller
             DB::beginTransaction();
             try {
                 // 1. Update the return request status
-                $returnRequest->update(['status' => 'Approved']);
+                $returnRequest->update([
+                    'status' => 'Approved',
+                    'processed_by_user_id' => auth()->id(),
+                ]);
                 
                 // 2. Update the original Order's specific 'order_status' column
                 if ($returnRequest->order) {
@@ -131,7 +143,8 @@ class ApprovalController extends Controller
                 // 1. Update the return request status and attach the reason
                 $returnRequest->update([
                     'status' => 'Rejected',
-                    'rejection_reason' => $request->rejection_reason
+                    'rejection_reason' => $request->rejection_reason,
+                    'processed_by_user_id' => auth()->id(),
                 ]);
                 
                 // 2. Revert the original Order 'order_status' back to Completed safely based on type
